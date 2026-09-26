@@ -1,0 +1,28 @@
+.link {
+  display: inline-flex;
+  gap: 0.2em;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  text-decoration: underline;
+  text-decoration-color: var(--color-border-strong);
+  transition:
+    color var(--transition),
+    text-decoration-color var(--transition);
+}
+
+.link:hover {
+  color: var(--color-accent);
+  text-decoration-color: currentColor;
+}
+
+.placeholder {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.soon {
+  font-size: var(--text-xs);
+  opacity: 0.8;
+}

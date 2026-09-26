@@ -1,0 +1,15 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.main {
+  flex: 1;
+  padding-top: clamp(var(--space-7), 8vw, var(--space-9));
+}
+
+.main:focus {
+  outline: none;
+}
