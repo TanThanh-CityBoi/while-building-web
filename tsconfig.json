@@ -1,4 +1,13 @@
 {
+  // Solution file: lets editors and `tsc -b` see every TypeScript project in the workspace.
+  // Day-to-day type-checking runs per package through Turborepo (`pnpm typecheck`).
   "files": [],
-  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]
+  "references": [
+    { "path": "./apps/client" },
+    { "path": "./apps/cms" },
+    { "path": "./packages/api-client" },
+    { "path": "./packages/types" },
+    { "path": "./packages/ui" },
+    { "path": "./packages/utils" }
+  ]
 }

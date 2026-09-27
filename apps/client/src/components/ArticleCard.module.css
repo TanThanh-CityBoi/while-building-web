@@ -1,0 +1,78 @@
+.list {
+  border-top: 1px solid var(--color-border);
+}
+
+.list > li {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.card {
+  position: relative;
+  display: grid;
+  gap: var(--space-2);
+  padding-block: var(--space-5);
+}
+
+.date {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.body {
+  display: grid;
+  gap: var(--space-2);
+  max-width: var(--prose-width);
+}
+
+.title {
+  font-size: var(--text-xl);
+}
+
+.link {
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+/* The whole entry is clickable; the heading link stays the single accessible target. */
+.link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.card:hover .link {
+  color: var(--color-accent);
+}
+
+.description {
+  color: var(--color-text-muted);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* Journal layout: date in its own column on wider screens. */
+@media (min-width: 40rem) {
+  .card {
+    grid-template-columns: 9rem 1fr;
+    gap: var(--space-5);
+  }
+
+  .date {
+    padding-top: 0.2rem;
+  }
+
+  .body {
+    grid-column: 2;
+  }
+}

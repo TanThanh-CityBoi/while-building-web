@@ -1,0 +1,62 @@
+.badge {
+  --tone: var(--color-neutral);
+  --tone-soft: var(--color-neutral-soft);
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.neutral {
+  --tone: var(--color-neutral);
+  --tone-soft: var(--color-neutral-soft);
+}
+.success {
+  --tone: var(--color-success);
+  --tone-soft: var(--color-success-soft);
+}
+.warning {
+  --tone: var(--color-warning);
+  --tone-soft: var(--color-warning-soft);
+}
+.danger {
+  --tone: var(--color-danger);
+  --tone-soft: var(--color-danger-soft);
+}
+.info {
+  --tone: var(--color-info);
+  --tone-soft: var(--color-info-soft);
+}
+.accent {
+  --tone: var(--color-accent);
+  --tone-soft: var(--color-accent-soft);
+}
+
+.soft {
+  padding: 0.05rem 0.5rem;
+  border-radius: var(--radius-full);
+  background: var(--tone-soft);
+  color: var(--tone);
+  font-weight: 550;
+}
+
+/* Neutral soft badges read better with body text than with the grey tone. */
+.soft.neutral {
+  color: var(--color-text-muted);
+}
+
+.dot {
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+}
+
+.indicator {
+  width: 0.45rem;
+  height: 0.45rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--tone);
+}

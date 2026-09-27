@@ -1,0 +1,48 @@
+.card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.padded {
+  padding: var(--space-5);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+
+/* When the card has no padding (e.g. wraps a table), give the header its own. */
+.card:not(.padded) > .header {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.padded > .header {
+  margin-bottom: var(--space-4);
+}
+
+.headerText {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.title {
+  font-size: var(--text-base);
+  letter-spacing: -0.01em;
+}
+
+.description {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-2);
+}

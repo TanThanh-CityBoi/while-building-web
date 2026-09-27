@@ -1,0 +1,20 @@
+{
+  "name": "@while-building/types",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared frontend ↔ API contract types for While Building.",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@while-building/config": "workspace:*",
+    "eslint": "^10.11.0",
+    "typescript": "~6.0.3"
+  }
+}

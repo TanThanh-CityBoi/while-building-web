@@ -1,0 +1,58 @@
+.state {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  padding: var(--space-7) var(--space-5);
+  text-align: center;
+}
+
+.fullscreen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  align-content: center;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-bottom: var(--space-2);
+  border-radius: 50%;
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+}
+
+.icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.title {
+  font-weight: 600;
+}
+
+.description {
+  max-width: 28rem;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.action {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.loading {
+  color: var(--color-text-muted);
+  animation: appear 200ms ease var(--loading-delay, 300ms) both;
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+}

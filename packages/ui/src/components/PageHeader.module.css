@@ -1,0 +1,36 @@
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4) var(--space-5);
+  margin-bottom: var(--page-header-margin);
+}
+
+.text {
+  display: grid;
+  gap: var(--page-header-gap);
+  max-width: var(--prose-width);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-accent);
+}
+
+.title {
+  font-size: var(--page-header-title-size);
+  letter-spacing: -0.03em;
+}
+
+.description {
+  font-size: var(--page-header-description-size, var(--text-lg));
+  color: var(--color-text-muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

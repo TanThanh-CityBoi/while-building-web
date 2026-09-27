@@ -1,0 +1,8 @@
+{
+  "extends": "@while-building/config/tsconfig/base.json",
+  "compilerOptions": {
+    // Intl and Date formatting helpers are environment-neutral, but tests run in Node.
+    "lib": ["ES2023", "DOM"]
+  },
+  "include": ["src"]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@while-building/utils",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Small, framework-agnostic helpers shared by While Building apps and packages.",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@while-building/config": "workspace:*",
+    "eslint": "^10.11.0",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.2"
+  }
+}

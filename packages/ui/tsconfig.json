@@ -1,0 +1,4 @@
+{
+  "extends": "@while-building/config/tsconfig/react.json",
+  "include": ["src"]
+}

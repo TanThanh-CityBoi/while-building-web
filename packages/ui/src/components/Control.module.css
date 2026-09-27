@@ -1,0 +1,69 @@
+/* Shared by Input, Textarea and Select. */
+.control {
+  display: block;
+  width: 100%;
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition);
+}
+
+.control::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.8;
+}
+
+.control:hover:not(:disabled) {
+  border-color: var(--color-text-muted);
+}
+
+.control:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+.control[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+.control[aria-invalid='true']:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-danger-soft);
+}
+
+.control:disabled {
+  cursor: not-allowed;
+  background: var(--color-surface-muted);
+  opacity: 0.7;
+}
+
+.sm {
+  min-height: var(--control-height-sm);
+}
+
+.textarea {
+  min-height: 6rem;
+  padding-block: var(--space-2);
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.select {
+  appearance: none;
+  padding-right: 2rem;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--color-text-muted) 50%),
+    linear-gradient(135deg, var(--color-text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 15px) 55%,
+    calc(100% - 10px) 55%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}

@@ -1,0 +1,53 @@
+import type { Article } from '@while-building/types';
+
+// Mock data until while-building-api serves articles. Dates and reading times are placeholders.
+export const mockArticles: Article[] = [
+  {
+    id: 'article-1',
+    slug: 'running-postgresql-on-a-kubernetes-homelab',
+    title: 'Running PostgreSQL on a Kubernetes Homelab',
+    description: 'What I learned while running PostgreSQL on a small Kubernetes homelab.',
+    category: 'DevOps',
+    status: 'PUBLISHED',
+    publishedAt: '2026-09-12',
+    readingTimeMinutes: 9,
+    createdAt: '2026-09-05T09:00:00Z',
+    updatedAt: '2026-09-12T08:30:00Z',
+  },
+  {
+    id: 'article-2',
+    slug: 'building-a-nestjs-api-from-scratch',
+    title: 'Building a NestJS API from Scratch',
+    description: 'Notes and lessons from building a backend with NestJS.',
+    category: 'Backend',
+    status: 'PUBLISHED',
+    publishedAt: '2026-08-27',
+    readingTimeMinutes: 12,
+    createdAt: '2026-08-18T10:00:00Z',
+    updatedAt: '2026-08-27T07:45:00Z',
+  },
+  {
+    id: 'article-3',
+    slug: 'what-i-learned-running-my-first-k3s-cluster',
+    title: 'What I Learned Running My First k3s Cluster',
+    description: 'Things I learned while experimenting with k3s on a Mini PC.',
+    category: 'Kubernetes',
+    status: 'PUBLISHED',
+    publishedAt: '2026-08-09',
+    readingTimeMinutes: 7,
+    createdAt: '2026-08-01T15:20:00Z',
+    updatedAt: '2026-08-09T06:10:00Z',
+  },
+  {
+    id: 'article-4',
+    slug: 'things-i-broke-while-building-my-homelab',
+    title: 'Things I Broke While Building My Homelab',
+    description: 'A collection of failures, debugging sessions and lessons learned.',
+    category: 'Homelab',
+    status: 'PUBLISHED',
+    publishedAt: '2026-07-21',
+    readingTimeMinutes: 10,
+    createdAt: '2026-07-10T18:00:00Z',
+    updatedAt: '2026-07-21T09:00:00Z',
+  },
+];

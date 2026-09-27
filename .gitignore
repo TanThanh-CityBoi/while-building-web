@@ -1,13 +1,14 @@
 # Dependencies
 node_modules
 
-# Build output
+# Build output & caches
 dist
 dist-ssr
 coverage
+.turbo
 *.tsbuildinfo
 
-# Environment files (keep the example)
+# Environment files (keep the examples)
 .env
 .env.*
 !.env.example
