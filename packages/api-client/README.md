@@ -17,6 +17,12 @@ const api = createApiClient({
 await api.health.check();
 await api.auth.login({ email, password }); // → AuthUser
 await api.users.list({ search: 'ada', page: 1 });
+
+// The assistant (CMS): a separate app with its own base URL, same access token.
+const api = createApiClient({ baseUrl, aiBaseUrl: import.meta.env.VITE_AI_URL /* … */ });
+for await (const event of api.ai.chat({ messages }, { signal })) {
+  // { type: 'status' | 'text' | 'sources' | 'error' | 'done', … }
+}
 ```
 
 **If `while-building-api` differs from the contract below, change this package** (usually a single
@@ -79,6 +85,22 @@ The backend never returns the `ROOT` user from any of these endpoints.
 | `DELETE /users/:id`       | —                                                       | `204`                                      |
 
 `User = { id, email, name, role, status, createdAt, updatedAt }` — never a password, hash or token.
+
+### Assistant (`apps/ai`, at `aiBaseUrl`)
+
+| Endpoint     | Request                                                    | Response                                     |
+| ------------ | ---------------------------------------------------------- | -------------------------------------------- |
+| `POST /chat` | `{ messages: [{ role: 'user' \| 'assistant', content }] }` | `200 text/event-stream` of `ChatStreamEvent` |
+
+- Sends the in-memory access token as `Authorization: Bearer …` with `credentials: 'omit'`; a `401`
+  refreshes the session once (shared with the API calls) and retries.
+- The request timeout only covers the wait for response headers; the answer then streams for as long
+  as it takes. Aborting the `signal` cancels it on the server.
+- Errors before the stream (`400`, `401`, `403`, `429`, `503`, network) reject with `ApiError`; errors
+  during the stream arrive as an `{ type: 'error', code, message }` event (`message` is safe to show).
+- Every stream ends with `done` or `error`. Unknown event types are skipped. Limits: `CHAT_LIMITS`
+  (20 messages, 8 000 characters each, 32 000 in total), from `@while-building/types`.
+- `parseSse(stream)` is the generic `text/event-stream` parser behind it.
 
 ### CORS and cookies
 

@@ -28,10 +28,22 @@ export interface RequestOptions {
   skipAuthRefresh?: boolean;
 }
 
+export interface StreamOptions {
+  /** Sent as JSON. */
+  body: unknown;
+  signal?: AbortSignal;
+}
+
 export interface HttpClient {
   readonly baseUrl: string;
   readonly isConfigured: boolean;
   request<T>(path: string, options?: RequestOptions): Promise<T>;
+  /**
+   * POSTs to an absolute URL (another service, such as the assistant) and resolves with the
+   * streaming `Response` once its headers arrive. Uses the same access token and 401 refresh as
+   * `request`; the timeout only covers the wait for headers. Rejects with an ApiError otherwise.
+   */
+  openStream(url: string, options: StreamOptions): Promise<Response>;
   /** Exchanges the refresh cookie for a new session. Resolves `false` if there is no valid session. */
   refreshSession(): Promise<boolean>;
   setAccessToken(token: string | null): void;
@@ -122,6 +134,71 @@ export function createHttpClient(config: HttpClientConfig): HttpClient {
     return refreshInFlight;
   }
 
+  async function openStreamOnce(url: string, options: StreamOptions): Promise<Response> {
+    const headers: Record<string, string> = {
+      Accept: 'text/event-stream',
+      'Content-Type': 'application/json',
+    };
+    if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+
+    // Unlike AbortSignal.timeout, this one is cleared once the headers are in, so a long
+    // answer can keep streaming. The caller's signal still cancels at any time.
+    const controller = new AbortController();
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, timeoutMs);
+    const onAbort = () => controller.abort(options.signal?.reason);
+    options.signal?.addEventListener('abort', onAbort, { once: true });
+    if (options.signal?.aborted) onAbort();
+
+    let response: Response;
+    try {
+      response = await fetchImpl(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(options.body),
+        // A bearer token, never cookies: the service needs no credentialed CORS.
+        credentials: 'omit',
+        signal: controller.signal,
+      });
+    } catch (error) {
+      options.signal?.removeEventListener('abort', onAbort);
+      if (options.signal?.aborted) throw error;
+      const origin = new URL(url).origin;
+      throw timedOut
+        ? new ApiError({
+            kind: 'timeout',
+            message: `${origin} took too long to respond.`,
+            cause: error,
+          })
+        : new ApiError({ kind: 'network', message: `Could not reach ${origin}.`, cause: error });
+    } finally {
+      clearTimeout(timer);
+    }
+
+    if (!response.ok) {
+      options.signal?.removeEventListener('abort', onAbort);
+      const text = await response.text();
+      throw ApiError.fromResponse(response.status, text ? parseJson(text) : undefined);
+    }
+    return response;
+  }
+
+  async function openStream(url: string, options: StreamOptions): Promise<Response> {
+    try {
+      return await openStreamOnce(url, options);
+    } catch (error) {
+      if (!config.refreshOnUnauthorized || !isApiError(error) || error.status !== 401) throw error;
+      if (!(await refreshSession())) {
+        expiredListeners.forEach((listener) => listener());
+        throw error;
+      }
+      return openStreamOnce(url, options);
+    }
+  }
+
   async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
     try {
       return await send<T>(path, options);
@@ -142,6 +219,7 @@ export function createHttpClient(config: HttpClientConfig): HttpClient {
     baseUrl,
     isConfigured,
     request,
+    openStream,
     refreshSession,
     setAccessToken(token) {
       accessToken = token;

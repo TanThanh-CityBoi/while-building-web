@@ -231,3 +231,135 @@ describe('session handling', () => {
     expect(calls.at(-1)!.headers.get('Authorization')).toBeNull();
   });
 });
+
+describe('assistant (ai.chat)', () => {
+  const AI_URL = 'http://ai.test/';
+  const sse = (...events: object[]) =>
+    new Response(
+      events
+        .map((e) => `event: ${(e as { type: string }).type}\ndata: ${JSON.stringify(e)}\n\n`)
+        .join(': ping\n\n'),
+      { headers: { 'Content-Type': 'text/event-stream' } },
+    );
+
+  async function collect(stream: AsyncIterable<unknown>) {
+    const events: unknown[] = [];
+    for await (const event of stream) events.push(event);
+    return events;
+  }
+
+  it('posts the conversation with the session token and yields the stream events', async () => {
+    const { fetch, calls } = createFetch({
+      'POST /auth/login': () => json({ accessToken: 'token-1' }),
+      'GET /auth/me': () => json({ data: authUser }),
+      'POST /chat': () =>
+        sse(
+          { type: 'status', phase: 'thinking' },
+          { type: 'text', delta: 'Hi' },
+          { type: 'future_event', x: 1 },
+          { type: 'done' },
+        ),
+    });
+    const api = createApiClient({
+      baseUrl: BASE_URL,
+      aiBaseUrl: AI_URL,
+      credentials: 'include',
+      fetch,
+    });
+    await api.auth.login({ email: 'ada@example.test', password: 'pw' });
+
+    const events = await collect(api.ai.chat({ messages: [{ role: 'user', content: 'Hello' }] }));
+
+    expect(events).toEqual([
+      { type: 'status', phase: 'thinking' },
+      { type: 'text', delta: 'Hi' },
+      { type: 'done' },
+    ]);
+    const chat = calls.find((c) => c.key === 'POST /chat')!;
+    expect(chat.url.toString()).toBe('http://ai.test/chat');
+    expect(chat.headers.get('Authorization')).toBe('Bearer token-1');
+    expect(chat.headers.get('Accept')).toBe('text/event-stream');
+    expect(chat.init.credentials).toBe('omit');
+    expect(JSON.parse(String(chat.init.body))).toEqual({
+      messages: [{ role: 'user', content: 'Hello' }],
+    });
+  });
+
+  it('refreshes the session once on 401 and retries', async () => {
+    let token = 'expired';
+    const { fetch, calls } = createFetch({
+      'POST /auth/refresh': () => {
+        token = 'fresh';
+        return json({ accessToken: 'fresh' });
+      },
+      'POST /chat': ({ init }) =>
+        new Headers(init.headers).get('Authorization') === `Bearer fresh` && token === 'fresh'
+          ? sse({ type: 'done' })
+          : json({ statusCode: 401, message: 'Your session has expired. Sign in again.' }, 401),
+    });
+    const api = createApiClient({
+      baseUrl: BASE_URL,
+      aiBaseUrl: AI_URL,
+      fetch,
+      refreshOnUnauthorized: true,
+    });
+
+    await expect(
+      collect(api.ai.chat({ messages: [{ role: 'user', content: 'Hi' }] })),
+    ).resolves.toEqual([{ type: 'done' }]);
+    expect(calls.map((c) => c.key)).toEqual(['POST /chat', 'POST /auth/refresh', 'POST /chat']);
+  });
+
+  it('rejects with an ApiError for failures before the stream starts', async () => {
+    const { fetch } = createFetch({
+      'POST /chat': () =>
+        json({ statusCode: 429, message: 'Too many questions in a short time.' }, 429),
+    });
+    const api = createApiClient({ baseUrl: BASE_URL, aiBaseUrl: AI_URL, fetch });
+
+    const error = await collect(api.ai.chat({ messages: [{ role: 'user', content: 'Hi' }] })).catch(
+      (e: unknown) => e,
+    );
+
+    expect(error).toMatchObject({ kind: 'http', status: 429 });
+    expect(getErrorMessage(error)).toBe('Too many questions in a short time.');
+  });
+
+  it('reports an unreachable assistant as a network error', async () => {
+    const fetch = vi.fn(async () => {
+      throw new TypeError('fetch failed');
+    });
+    const api = createApiClient({ baseUrl: BASE_URL, aiBaseUrl: AI_URL, fetch });
+
+    await expect(
+      collect(api.ai.chat({ messages: [{ role: 'user', content: 'Hi' }] })),
+    ).rejects.toMatchObject({ kind: 'network', message: 'Could not reach http://ai.test.' });
+  });
+
+  it('keeps the caller’s abort as an AbortError', async () => {
+    const controller = new AbortController();
+    const fetch = vi.fn(async (_input: RequestInfo | URL, init: RequestInit = {}) => {
+      controller.abort();
+      throw init.signal?.reason ?? new DOMException('aborted', 'AbortError');
+    });
+    const api = createApiClient({ baseUrl: BASE_URL, aiBaseUrl: AI_URL, fetch });
+
+    const error = await collect(
+      api.ai.chat({ messages: [{ role: 'user', content: 'Hi' }] }, { signal: controller.signal }),
+    ).catch((e: unknown) => e);
+
+    expect(error).not.toBeInstanceOf(ApiError);
+    expect((error as Error).name).toBe('AbortError');
+  });
+
+  it('fails fast when the assistant URL is not configured', async () => {
+    const fetch = vi.fn();
+    const api = createApiClient({ baseUrl: BASE_URL, fetch });
+
+    expect(api.ai.isConfigured).toBe(false);
+    await expect(
+      collect(api.ai.chat({ messages: [{ role: 'user', content: 'Hi' }] })),
+    ).rejects.toMatchObject({ kind: 'config' });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});
