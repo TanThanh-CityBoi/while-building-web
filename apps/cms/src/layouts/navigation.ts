@@ -5,6 +5,7 @@ import {
   IconFolder,
   IconProject,
   IconSettings,
+  IconSparkles,
   IconUsers,
   type Icon,
 } from '@/components/icons';
@@ -33,6 +34,7 @@ export const navigation: NavItem[] = [
       { to: '/content/projects', label: 'Projects', icon: IconProject, permission: 'CONTENT_READ' },
     ],
   },
+  { to: '/assistant', label: 'Assistant', icon: IconSparkles, permission: 'CONTENT_READ' },
   { to: '/users', label: 'Users', icon: IconUsers, permission: 'USERS_READ' },
   { to: '/settings', label: 'Settings', icon: IconSettings },
 ];

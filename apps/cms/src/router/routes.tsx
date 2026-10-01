@@ -1,5 +1,6 @@
 import { Navigate, type RouteObject } from 'react-router';
 import { RedirectIfAuthenticated, RequireAuth, RequirePermission } from '@/auth/guards';
+import { AssistantPage } from '@/features/assistant/AssistantPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { ArticlesPage } from '@/features/content/ArticlesPage';
 import { ContentOverviewPage } from '@/features/content/ContentOverviewPage';
@@ -51,6 +52,14 @@ export const routes: RouteObject[] = [
                 element: (
                   <RequirePermission permission="CONTENT_READ">
                     <ProjectsPage />
+                  </RequirePermission>
+                ),
+              },
+              {
+                path: 'assistant',
+                element: (
+                  <RequirePermission permission="CONTENT_READ">
+                    <AssistantPage />
                   </RequirePermission>
                 ),
               },

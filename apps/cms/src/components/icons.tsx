@@ -122,3 +122,10 @@ export const IconLock = createIcon(
 export const IconStar = createIcon(
   <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z" />,
 );
+export const IconSparkles = createIcon(
+  <>
+    <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
+    <path d="M12 8.5 13.2 10.8 15.5 12l-2.3 1.2L12 15.5l-1.2-2.3L8.5 12l2.3-1.2z" />
+    <path d="M18.5 4.5v2M17.5 5.5h2M5.5 17.5v2M4.5 18.5h2" />
+  </>,
+);
