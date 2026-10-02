@@ -26,6 +26,10 @@ export interface RequestOptions {
   signal?: AbortSignal;
   /** Never refresh-and-retry this request (used by the auth endpoints themselves). */
   skipAuthRefresh?: boolean;
+  /** Another service's base URL (e.g. the assistant). Defaults to the API's. */
+  baseUrl?: string;
+  /** Overrides the client's `credentials`, e.g. `'omit'` for services that take no cookies. */
+  credentials?: RequestCredentials;
 }
 
 export interface StreamOptions {
@@ -66,10 +70,14 @@ export function createHttpClient(config: HttpClientConfig): HttpClient {
   const expiredListeners = new Set<() => void>();
 
   async function send<T>(path: string, options: RequestOptions): Promise<T> {
-    if (!isConfigured) {
+    const otherService = options.baseUrl !== undefined;
+    const base = otherService ? trimTrailingSlash(options.baseUrl?.trim() ?? '') : baseUrl;
+    if (!base) {
       throw new ApiError({
         kind: 'config',
-        message: 'The API URL is not configured (set VITE_API_URL).',
+        message: otherService
+          ? 'The service URL is not configured.'
+          : 'The API URL is not configured (set VITE_API_URL).',
       });
     }
 
@@ -80,11 +88,11 @@ export function createHttpClient(config: HttpClientConfig): HttpClient {
     const timeout = AbortSignal.timeout(timeoutMs);
     let response: Response;
     try {
-      response = await fetchImpl(joinUrl(baseUrl, path) + toQueryString(options.query), {
+      response = await fetchImpl(joinUrl(base, path) + toQueryString(options.query), {
         method: options.method ?? 'GET',
         headers,
         body: options.body === undefined ? undefined : JSON.stringify(options.body),
-        credentials: config.credentials ?? 'same-origin',
+        credentials: options.credentials ?? config.credentials ?? 'same-origin',
         signal: options.signal ? AbortSignal.any([options.signal, timeout]) : timeout,
       });
     } catch (error) {
@@ -93,13 +101,15 @@ export function createHttpClient(config: HttpClientConfig): HttpClient {
       if (timeout.aborted) {
         throw new ApiError({
           kind: 'timeout',
-          message: 'The API took too long to respond.',
+          message: otherService
+            ? `${base} took too long to respond.`
+            : 'The API took too long to respond.',
           cause: error,
         });
       }
       throw new ApiError({
         kind: 'network',
-        message: `Could not reach the API at ${baseUrl}.`,
+        message: otherService ? `Could not reach ${base}.` : `Could not reach the API at ${base}.`,
         cause: error,
       });
     }

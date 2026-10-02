@@ -362,4 +362,77 @@ describe('assistant (ai.chat)', () => {
     ).rejects.toMatchObject({ kind: 'config' });
     expect(fetch).not.toHaveBeenCalled();
   });
+
+  it('lists the models on the assistant with the session token and without cookies', async () => {
+    const options = {
+      defaultProvider: 'anthropic',
+      providers: [
+        {
+          id: 'anthropic',
+          label: 'Anthropic',
+          defaultModel: 'claude-opus-5-5',
+          models: [{ id: 'claude-opus-5-5', label: 'Claude Opus 5.5' }],
+        },
+      ],
+    };
+    const { fetch, calls } = createFetch({
+      'POST /auth/login': () => json({ accessToken: 'token-1' }),
+      'GET /auth/me': () => json({ data: authUser }),
+      'GET /models': () => json({ data: options }),
+    });
+    const api = createApiClient({
+      baseUrl: BASE_URL,
+      aiBaseUrl: AI_URL,
+      credentials: 'include',
+      fetch,
+    });
+    await api.auth.login({ email: 'ada@example.test', password: 'pw' });
+
+    await expect(api.ai.models()).resolves.toEqual(options);
+    const call = calls.find((c) => c.key === 'GET /models')!;
+    expect(call.url.toString()).toBe('http://ai.test/models');
+    expect(call.headers.get('Authorization')).toBe('Bearer token-1');
+    expect(call.init.credentials).toBe('omit');
+  });
+
+  it('names the assistant, not the API, when it cannot be reached', async () => {
+    const fetch = vi.fn(async () => {
+      throw new TypeError('fetch failed');
+    });
+    const api = createApiClient({ baseUrl: BASE_URL, aiBaseUrl: AI_URL, fetch });
+
+    await expect(api.ai.models()).rejects.toMatchObject({
+      kind: 'network',
+      message: 'Could not reach http://ai.test.',
+    });
+    await expect(api.health.check()).rejects.toMatchObject({
+      message: 'Could not reach the API at http://api.test.',
+    });
+  });
+
+  it('sends the chosen provider and model with the conversation', async () => {
+    const { fetch, calls } = createFetch({ 'POST /chat': () => sse({ type: 'done' }) });
+    const api = createApiClient({ baseUrl: BASE_URL, aiBaseUrl: AI_URL, fetch });
+
+    await collect(
+      api.ai.chat({
+        messages: [{ role: 'user', content: 'Hi' }],
+        provider: 'openai',
+        model: 'gpt-5.5',
+      }),
+    );
+
+    expect(JSON.parse(String(calls[0]!.init.body))).toEqual({
+      messages: [{ role: 'user', content: 'Hi' }],
+      provider: 'openai',
+      model: 'gpt-5.5',
+    });
+  });
+
+  it('does not ask for models without an assistant URL', async () => {
+    const fetch = vi.fn();
+    const api = createApiClient({ baseUrl: BASE_URL, fetch });
+    await expect(api.ai.models()).rejects.toMatchObject({ kind: 'config' });
+    expect(fetch).not.toHaveBeenCalled();
+  });
 });

@@ -88,12 +88,16 @@ The backend never returns the `ROOT` user from any of these endpoints.
 
 ### Assistant (`apps/ai`, at `aiBaseUrl`)
 
-| Endpoint     | Request                                                    | Response                                     |
-| ------------ | ---------------------------------------------------------- | -------------------------------------------- |
-| `POST /chat` | `{ messages: [{ role: 'user' \| 'assistant', content }] }` | `200 text/event-stream` of `ChatStreamEvent` |
+| Endpoint      | Request                                                                       | Response                                                                       |
+| ------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `GET /models` | —                                                                             | `{ data: AiModelOptions }` — enabled providers and their models, with defaults |
+| `POST /chat`  | `{ messages: [{ role: 'user' \| 'assistant', content }], provider?, model? }` | `200 text/event-stream` of `ChatStreamEvent`                                   |
 
 - Sends the in-memory access token as `Authorization: Bearer …` with `credentials: 'omit'`; a `401`
-  refreshes the session once (shared with the API calls) and retries.
+  refreshes the session once (shared with the API calls) and retries. (`request()` reaches other
+  services through its `baseUrl` / `credentials` options.)
+- `provider` / `model` come from `api.ai.models()`; omitted, the server uses its defaults. The server
+  rejects anything it doesn't offer (`400`).
 - The request timeout only covers the wait for response headers; the answer then streams for as long
   as it takes. Aborting the `signal` cancels it on the server.
 - Errors before the stream (`400`, `401`, `403`, `429`, `503`, network) reject with `ApiError`; errors

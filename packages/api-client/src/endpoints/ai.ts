@@ -1,4 +1,9 @@
-import type { ChatRequest, ChatStreamEvent } from '@while-building/types';
+import type {
+  AiModelOptions,
+  ApiResponse,
+  ChatRequest,
+  ChatStreamEvent,
+} from '@while-building/types';
 import { joinUrl, trimTrailingSlash } from '@while-building/utils';
 import { ApiError } from '../errors';
 import type { HttpClient } from '../http';
@@ -24,7 +29,22 @@ export function createAiApi(http: HttpClient, aiBaseUrl: string | undefined) {
     isConfigured: baseUrl !== '',
 
     /**
-     * `POST /chat` — the assistant's answer as a stream of events. Rejects with an ApiError
+     * `GET /models` — the providers and models the assistant offers (only those enabled on the
+     * server, with their defaults). Same access token and 401 refresh as the API calls; no cookies.
+     */
+    async models({ signal }: { signal?: AbortSignal } = {}): Promise<AiModelOptions> {
+      if (!baseUrl) throw notConfigured();
+      const response = await http.request<ApiResponse<AiModelOptions>>('/models', {
+        baseUrl,
+        credentials: 'omit',
+        signal,
+      });
+      return response.data;
+    },
+
+    /**
+     * `POST /chat` — the assistant's answer as a stream of events, from the chosen provider and
+     * model (`request.provider` / `request.model`, validated by the server). Rejects with an ApiError
      * before the stream starts (401/403/429/400, network…); failures after that arrive as an
      * `error` event. Aborting `signal` cancels the answer on the server.
      */
@@ -32,12 +52,7 @@ export function createAiApi(http: HttpClient, aiBaseUrl: string | undefined) {
       request: ChatRequest,
       { signal }: { signal?: AbortSignal } = {},
     ): AsyncGenerator<ChatStreamEvent> {
-      if (!baseUrl) {
-        throw new ApiError({
-          kind: 'config',
-          message: 'The assistant URL is not configured (set VITE_AI_URL).',
-        });
-      }
+      if (!baseUrl) throw notConfigured();
       const response = await http.openStream(joinUrl(baseUrl, '/chat'), { body: request, signal });
       if (!response.body) {
         throw new ApiError({ kind: 'network', message: 'The assistant sent an empty response.' });
@@ -51,6 +66,13 @@ export function createAiApi(http: HttpClient, aiBaseUrl: string | undefined) {
 }
 
 export type AiApi = ReturnType<typeof createAiApi>;
+
+function notConfigured(): ApiError {
+  return new ApiError({
+    kind: 'config',
+    message: 'The assistant URL is not configured (set VITE_AI_URL).',
+  });
+}
 
 /** Known events only: unknown types (from a newer server) are skipped. */
 function toEvent(data: string): ChatStreamEvent | null {

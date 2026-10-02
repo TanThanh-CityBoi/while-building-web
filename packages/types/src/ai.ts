@@ -18,6 +18,28 @@ export interface ChatMessage {
 /** `POST /chat` body: the conversation so far, oldest first, starting and ending with the user. */
 export interface ChatRequest {
   messages: ChatMessage[];
+  /** One of `GET /models`' providers; the server's default when omitted. */
+  provider?: string;
+  /** One of that provider's models; its default when omitted. The server validates both. */
+  model?: string;
+}
+
+export interface AiModelOption {
+  id: string;
+  label: string;
+}
+
+export interface AiProviderOption {
+  id: string;
+  label: string;
+  defaultModel: string;
+  models: AiModelOption[];
+}
+
+/** `GET /models`: the providers enabled on the server and the models each offers. */
+export interface AiModelOptions {
+  defaultProvider: string;
+  providers: AiProviderOption[];
 }
 
 /** Published content an answer drew on. */
