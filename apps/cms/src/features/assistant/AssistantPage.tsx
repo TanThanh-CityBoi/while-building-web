@@ -6,6 +6,7 @@ import {
   EmptyState,
   PageContainer,
   PageHeader,
+  Select,
   Spinner,
   Tag,
   Textarea,
@@ -13,7 +14,10 @@ import {
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { IconSparkles } from '@/components/icons';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { api } from '@/lib/api';
 import { activityLabel } from './activity';
+import { useModelSelection } from './modelSelection';
+import { useModelOptions } from './queries';
 import { useChat, type Activity, type ChatClient, type ChatTurn } from './useChat';
 import styles from './AssistantPage.module.css';
 
@@ -28,9 +32,11 @@ export interface AssistantPageProps {
   client?: ChatClient;
 }
 
-export function AssistantPage({ client }: AssistantPageProps) {
+export function AssistantPage({ client = api.ai }: AssistantPageProps) {
   useDocumentTitle('Assistant');
   const chat = useChat(client);
+  const modelOptions = useModelOptions(client);
+  const models = useModelSelection(modelOptions.data);
   const [draft, setDraft] = useState('');
   const end = useRef<HTMLDivElement>(null);
 
@@ -40,7 +46,7 @@ export function AssistantPage({ client }: AssistantPageProps) {
 
   const send = (text: string) => {
     if (!text.trim() || chat.streaming) return;
-    chat.send(text);
+    chat.send(text, models.selection);
     setDraft('');
   };
 
@@ -79,6 +85,43 @@ export function AssistantPage({ client }: AssistantPageProps) {
       )}
 
       <Card padding="none" className={styles.chat}>
+        {chat.isConfigured && (
+          <div className={styles.modelBar}>
+            <label className={styles.modelField}>
+              <span>Provider</span>
+              <Select
+                controlSize="sm"
+                value={models.selection?.provider ?? ''}
+                disabled={!models.selection || chat.streaming}
+                onChange={(event) => models.selectProvider(event.target.value)}
+                options={
+                  models.providers.length > 0
+                    ? models.providers.map((p) => ({ value: p.id, label: p.label }))
+                    : [{ value: '', label: modelOptions.isPending ? 'Loading…' : 'Default' }]
+                }
+              />
+            </label>
+            <label className={styles.modelField}>
+              <span>Model</span>
+              <Select
+                controlSize="sm"
+                value={models.selection?.model ?? ''}
+                disabled={!models.selection || chat.streaming}
+                onChange={(event) => models.selectModel(event.target.value)}
+                options={
+                  models.models.length > 0
+                    ? models.models.map((m) => ({ value: m.id, label: m.label }))
+                    : [{ value: '', label: modelOptions.isPending ? 'Loading…' : 'Default' }]
+                }
+              />
+            </label>
+            {modelOptions.isError && (
+              <span className={styles.hint} role="status">
+                Couldn&apos;t load the models: questions use the server&apos;s default.
+              </span>
+            )}
+          </div>
+        )}
         {chat.turns.length === 0 ? (
           <EmptyState
             icon={<IconSparkles width={24} height={24} />}
@@ -112,7 +155,11 @@ export function AssistantPage({ client }: AssistantPageProps) {
                 key={turn.id}
                 turn={turn}
                 activity={chat.activity}
-                onRetry={index === chat.turns.length - 1 && chat.canRetry ? chat.retry : undefined}
+                onRetry={
+                  index === chat.turns.length - 1 && chat.canRetry
+                    ? () => chat.retry(models.selection)
+                    : undefined
+                }
               />
             ))}
             <div ref={end} />
@@ -166,7 +213,7 @@ function Turn({ turn, activity, onRetry }: TurnProps) {
   const working = turn.status === 'streaming' && (turn.content === '' || activity?.kind === 'tool');
   return (
     <article className={styles.turn} aria-label="Assistant answer">
-      <span className={styles.role}>Assistant</span>
+      <span className={styles.role}>Assistant{turn.model && ` · ${turn.model}`}</span>
       {turn.content && <p className={styles.text}>{turn.content}</p>}
 
       {working && (

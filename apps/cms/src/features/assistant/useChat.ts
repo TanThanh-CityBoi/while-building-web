@@ -8,9 +8,10 @@ import {
 } from '@while-building/types';
 import { useEffect, useReducer, useRef } from 'react';
 import { api } from '@/lib/api';
+import type { ModelSelection } from './modelSelection';
 
 /** The part of the API client the chat needs (tests pass a fake). */
-export type ChatClient = Pick<AiApi, 'chat' | 'isConfigured'>;
+export type ChatClient = Pick<AiApi, 'chat' | 'models' | 'isConfigured'>;
 
 export type TurnStatus = 'streaming' | 'done' | 'error' | 'stopped';
 
@@ -23,6 +24,8 @@ export interface ChatTurn {
   sources: ChatSource[];
   /** A message safe to show, when `status` is `error`. */
   error?: string;
+  /** The model asked for this answer (assistant turns), e.g. `GPT-5.5`. */
+  model?: string;
 }
 
 /** What the assistant is doing while no text is arriving. */
@@ -36,8 +39,8 @@ interface State {
 }
 
 type Action =
-  | { type: 'send'; content: string }
-  | { type: 'retry' }
+  | { type: 'send'; content: string; model?: string }
+  | { type: 'retry'; model?: string }
   | { type: 'event'; event: ChatStreamEvent }
   | { type: 'failed'; message: string }
   | { type: 'stopped' }
@@ -45,8 +48,8 @@ type Action =
 
 const initialState: State = { turns: [], activity: null, streaming: false, nextId: 1 };
 
-function assistantTurn(id: number): ChatTurn {
-  return { id, role: 'assistant', content: '', status: 'streaming', sources: [] };
+function assistantTurn(id: number, model?: string): ChatTurn {
+  return { id, role: 'assistant', content: '', status: 'streaming', sources: [], model };
 }
 
 /** Applies `change` to the last turn if it is the assistant's answer in progress. */
@@ -71,7 +74,7 @@ function reducer(state: State, action: Action): State {
         sources: [],
       };
       return {
-        turns: [...state.turns, question, assistantTurn(state.nextId + 1)],
+        turns: [...state.turns, question, assistantTurn(state.nextId + 1, action.model)],
         activity: { kind: 'thinking' },
         streaming: true,
         nextId: state.nextId + 2,
@@ -79,7 +82,7 @@ function reducer(state: State, action: Action): State {
     }
     case 'retry':
       return {
-        turns: [...state.turns.slice(0, -1), assistantTurn(state.nextId)],
+        turns: [...state.turns.slice(0, -1), assistantTurn(state.nextId, action.model)],
         activity: { kind: 'thinking' },
         streaming: true,
         nextId: state.nextId + 1,
@@ -142,7 +145,8 @@ export function fitToLimits(messages: ChatMessage[]): ChatMessage[] {
 
 /**
  * Chat with the While Building assistant: the conversation lives in memory (gone on reload or
- * sign-out). Answers stream in; `stop` cancels the request (and the answer on the server).
+ * sign-out). Answers stream in; `stop` cancels the request (and the answer on the server). The
+ * history is plain text, so each question may go to a different provider or model.
  */
 export function useChat(client: ChatClient = api.ai) {
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -151,13 +155,16 @@ export function useChat(client: ChatClient = api.ai) {
   // Leaving the page cancels an answer in progress.
   useEffect(() => () => controller.current?.abort(), []);
 
-  async function ask(history: ChatMessage[]) {
+  async function ask(history: ChatMessage[], selection?: ModelSelection) {
     const current = new AbortController();
     controller.current = current;
     let finished = false;
     try {
       for await (const event of client.chat(
-        { messages: fitToLimits(history) },
+        {
+          messages: fitToLimits(history),
+          ...(selection && { provider: selection.provider, model: selection.model }),
+        },
         { signal: current.signal },
       )) {
         dispatch({ type: 'event', event });
@@ -191,12 +198,13 @@ export function useChat(client: ChatClient = api.ai) {
     canRetry,
     isConfigured: client.isConfigured,
 
-    send(text: string) {
+    /** Asks a question, with the chosen provider/model (the server's defaults without one). */
+    send(text: string, selection?: ModelSelection) {
       const content = text.trim();
       // `controller` is set synchronously by `ask`: catches a second send in the same render.
       if (!content || state.streaming || controller.current) return;
-      dispatch({ type: 'send', content });
-      void ask([...toHistory(state.turns), { role: 'user', content }]);
+      dispatch({ type: 'send', content, model: selection?.label });
+      void ask([...toHistory(state.turns), { role: 'user', content }], selection);
     },
 
     stop() {
@@ -205,10 +213,11 @@ export function useChat(client: ChatClient = api.ai) {
       dispatch({ type: 'stopped' });
     },
 
-    retry() {
+    /** Asks the last question again, with the current selection (it may differ from the first try). */
+    retry(selection?: ModelSelection) {
       if (!canRetry || controller.current) return;
-      dispatch({ type: 'retry' });
-      void ask(toHistory(state.turns.slice(0, -1)));
+      dispatch({ type: 'retry', model: selection?.label });
+      void ask(toHistory(state.turns.slice(0, -1)), selection);
     },
 
     reset() {

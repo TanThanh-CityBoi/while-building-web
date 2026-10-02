@@ -1,7 +1,8 @@
-import { act, render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiError } from '@while-building/api-client';
-import type { ChatRequest, ChatStreamEvent } from '@while-building/types';
+import type { AiModelOptions, ChatRequest, ChatStreamEvent } from '@while-building/types';
 import { describe, expect, it, vi } from 'vitest';
 import { AssistantPage } from './AssistantPage';
 import type { ChatClient } from './useChat';
@@ -32,6 +33,48 @@ const failing = (error: Error): Script =>
     throw error;
   };
 
+const MODEL_OPTIONS: AiModelOptions = {
+  defaultProvider: 'anthropic',
+  providers: [
+    {
+      id: 'anthropic',
+      label: 'Anthropic',
+      defaultModel: 'claude-opus-5-5',
+      models: [
+        { id: 'claude-opus-5-5', label: 'Claude Opus 5.5' },
+        { id: 'claude-sonnet-5-5', label: 'Claude Sonnet 5.5' },
+      ],
+    },
+    {
+      id: 'openai',
+      label: 'OpenAI',
+      defaultModel: 'gpt-5.5',
+      models: [
+        { id: 'gpt-5.5', label: 'GPT-5.5' },
+        { id: 'gpt-5.4-mini', label: 'GPT-5.4 mini' },
+      ],
+    },
+    {
+      id: 'gemini',
+      label: 'Google Gemini',
+      defaultModel: 'gemini-pro-latest',
+      models: [
+        { id: 'gemini-pro-latest', label: 'Gemini Pro (latest)' },
+        { id: 'gemini-flash-latest', label: 'Gemini Flash (latest)' },
+      ],
+    },
+  ],
+};
+
+function renderPage(client: ChatClient) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <AssistantPage client={client} />
+    </QueryClientProvider>,
+  );
+}
+
 /** A stand-in for `api.ai`: each call plays the next script. */
 function createFakeClient(...scripts: Script[]) {
   const signals: Array<AbortSignal | undefined> = [];
@@ -41,8 +84,9 @@ function createFakeClient(...scripts: Script[]) {
     if (!script) throw new Error('No scripted answer left');
     return script(options?.signal);
   });
-  const client: ChatClient = { chat, isConfigured: true };
-  return { client, chat, signals };
+  const models = vi.fn(async (_options?: { signal?: AbortSignal }) => MODEL_OPTIONS);
+  const client: ChatClient = { chat, models, isConfigured: true };
+  return { client, chat, models, signals };
 }
 
 const k3sAnswer = answer(
@@ -65,6 +109,11 @@ const k3sAnswer = answer(
   { type: 'done' },
 );
 
+/** The model list arrives asynchronously; questions sent after it carry the selection. */
+async function modelsLoaded() {
+  await screen.findByRole('option', { name: 'OpenAI' });
+}
+
 async function ask(user: ReturnType<typeof userEvent.setup>, question: string) {
   await user.type(screen.getByRole('textbox', { name: 'Your question' }), question);
   await user.click(screen.getByRole('button', { name: 'Send' }));
@@ -77,7 +126,8 @@ describe('AssistantPage', () => {
       k3sAnswer,
       answer({ type: 'text', delta: 'Sure.' }, { type: 'done' }),
     );
-    render(<AssistantPage client={client} />);
+    renderPage(client);
+    await modelsLoaded();
 
     await ask(user, 'Any k3s articles?');
 
@@ -85,7 +135,11 @@ describe('AssistantPage', () => {
     expect(screen.getByText('Any k3s articles?')).toBeTruthy();
     expect(screen.getByText('Article · My k3s Homelab')).toBeTruthy();
     expect(chat).toHaveBeenCalledWith(
-      { messages: [{ role: 'user', content: 'Any k3s articles?' }] },
+      {
+        messages: [{ role: 'user', content: 'Any k3s articles?' }],
+        provider: 'anthropic',
+        model: 'claude-opus-5-5',
+      },
       expect.objectContaining({ signal: expect.any(AbortSignal) as AbortSignal }),
     );
     expect(
@@ -101,6 +155,8 @@ describe('AssistantPage', () => {
         { role: 'assistant', content: 'There is "My k3s Homelab".' },
         { role: 'user', content: 'And projects?' },
       ],
+      provider: 'anthropic',
+      model: 'claude-opus-5-5',
     });
   });
 
@@ -112,7 +168,7 @@ describe('AssistantPage', () => {
         { type: 'status', phase: 'tool_start', tool: 'search_articles' },
       ),
     );
-    render(<AssistantPage client={client} />);
+    renderPage(client);
 
     await ask(user, 'Any k3s articles?');
 
@@ -137,7 +193,8 @@ describe('AssistantPage', () => {
       ),
       answer({ type: 'text', delta: 'Here you go.' }, { type: 'done' }),
     );
-    render(<AssistantPage client={client} />);
+    renderPage(client);
+    await modelsLoaded();
 
     await ask(user, 'Hi');
 
@@ -159,7 +216,7 @@ describe('AssistantPage', () => {
         { type: 'error', code: 'timeout', message: 'The assistant took too long to answer.' },
       ),
     );
-    render(<AssistantPage client={client} />);
+    renderPage(client);
 
     await ask(user, 'Hi');
 
@@ -170,7 +227,7 @@ describe('AssistantPage', () => {
   it('reports a stream that ends without finishing', async () => {
     const user = userEvent.setup();
     const { client } = createFakeClient(answer({ type: 'text', delta: 'Half' }));
-    render(<AssistantPage client={client} />);
+    renderPage(client);
 
     await ask(user, 'Hi');
 
@@ -180,7 +237,8 @@ describe('AssistantPage', () => {
   it('sends with Enter and adds a line with Shift+Enter', async () => {
     const user = userEvent.setup();
     const { client, chat } = createFakeClient(answer({ type: 'done' }));
-    render(<AssistantPage client={client} />);
+    renderPage(client);
+    await modelsLoaded();
     const box = screen.getByRole('textbox', { name: 'Your question' });
 
     await user.type(box, 'Line one{Shift>}{Enter}{/Shift}Line two');
@@ -189,13 +247,15 @@ describe('AssistantPage', () => {
 
     expect(chat.mock.calls[0]?.[0]).toEqual({
       messages: [{ role: 'user', content: 'Line one\nLine two' }],
+      provider: 'anthropic',
+      model: 'claude-opus-5-5',
     });
   });
 
   it('sends a suggestion and starts a new conversation', async () => {
     const user = userEvent.setup();
     const { client, chat } = createFakeClient(k3sAnswer);
-    render(<AssistantPage client={client} />);
+    renderPage(client);
 
     await user.click(screen.getByRole('button', { name: 'Which articles are about Kubernetes?' }));
     expect(await screen.findByText('There is "My k3s Homelab".')).toBeTruthy();
@@ -207,8 +267,8 @@ describe('AssistantPage', () => {
   });
 
   it('explains when the assistant is not configured', () => {
-    const client: ChatClient = { chat: vi.fn(), isConfigured: false };
-    render(<AssistantPage client={client} />);
+    const client: ChatClient = { chat: vi.fn(), models: vi.fn(), isConfigured: false };
+    renderPage(client);
 
     expect(screen.getByText('The assistant is not configured')).toBeTruthy();
     expect(
@@ -219,11 +279,106 @@ describe('AssistantPage', () => {
   it('cancels an answer in progress when leaving the page', async () => {
     const user = userEvent.setup();
     const { client, signals } = createFakeClient(hang({ type: 'status', phase: 'thinking' }));
-    const { unmount } = render(<AssistantPage client={client} />);
+    const { unmount } = renderPage(client);
 
     await ask(user, 'Hi');
     act(() => unmount());
 
     expect(signals[0]?.aborted).toBe(true);
+  });
+
+  describe('provider and model', () => {
+    const providerSelect = () => screen.getByRole('combobox', { name: 'Provider' });
+    const modelSelect = () => screen.getByRole('combobox', { name: 'Model' });
+    const optionLabels = (select: HTMLElement) =>
+      within(select)
+        .getAllByRole('option')
+        .map((option) => option.textContent);
+
+    it('offers the server providers and only the models of the selected one', async () => {
+      const { client } = createFakeClient();
+      renderPage(client);
+
+      await modelsLoaded();
+      expect(optionLabels(providerSelect())).toEqual(['Anthropic', 'OpenAI', 'Google Gemini']);
+      expect((providerSelect() as HTMLSelectElement).value).toBe('anthropic');
+      expect(optionLabels(modelSelect())).toEqual(['Claude Opus 5.5', 'Claude Sonnet 5.5']);
+      expect((modelSelect() as HTMLSelectElement).value).toBe('claude-opus-5-5');
+    });
+
+    it('resets the model when the provider changes and sends the selection', async () => {
+      const user = userEvent.setup();
+      const { client, chat } = createFakeClient(
+        answer({ type: 'text', delta: 'Hi from GPT' }, { type: 'done' }),
+      );
+      renderPage(client);
+      await modelsLoaded();
+
+      await user.selectOptions(providerSelect(), 'openai');
+      expect(optionLabels(modelSelect())).toEqual(['GPT-5.5', 'GPT-5.4 mini']);
+      expect((modelSelect() as HTMLSelectElement).value).toBe('gpt-5.5');
+      await user.selectOptions(modelSelect(), 'gpt-5.4-mini');
+      await ask(user, 'Hello');
+
+      expect(await screen.findByText('Hi from GPT')).toBeTruthy();
+      expect(chat.mock.calls[0]?.[0]).toEqual({
+        messages: [{ role: 'user', content: 'Hello' }],
+        provider: 'openai',
+        model: 'gpt-5.4-mini',
+      });
+      // The answer says which model wrote it.
+      expect(screen.getByText('Assistant · GPT-5.4 mini')).toBeTruthy();
+    });
+
+    it('lets the user pick a Gemini model', async () => {
+      const user = userEvent.setup();
+      const { client, chat } = createFakeClient(
+        answer({ type: 'text', delta: 'Hi from Gemini' }, { type: 'done' }),
+      );
+      renderPage(client);
+      await modelsLoaded();
+
+      await user.selectOptions(providerSelect(), 'gemini');
+      expect(optionLabels(modelSelect())).toEqual(['Gemini Pro (latest)', 'Gemini Flash (latest)']);
+      expect((modelSelect() as HTMLSelectElement).value).toBe('gemini-pro-latest');
+      await user.selectOptions(modelSelect(), 'gemini-flash-latest');
+      await ask(user, 'Hello');
+
+      expect(await screen.findByText('Hi from Gemini')).toBeTruthy();
+      expect(chat.mock.calls[0]?.[0]).toEqual({
+        messages: [{ role: 'user', content: 'Hello' }],
+        provider: 'gemini',
+        model: 'gemini-flash-latest',
+      });
+      expect(screen.getByText('Assistant · Gemini Flash (latest)')).toBeTruthy();
+    });
+
+    it('locks the selection while an answer streams', async () => {
+      const user = userEvent.setup();
+      const { client } = createFakeClient(hang({ type: 'status', phase: 'thinking' }));
+      renderPage(client);
+      await modelsLoaded();
+
+      await ask(user, 'Hi');
+
+      expect((providerSelect() as HTMLSelectElement).disabled).toBe(true);
+      expect((modelSelect() as HTMLSelectElement).disabled).toBe(true);
+    });
+
+    it('still answers with the server default when the models cannot be loaded', async () => {
+      const user = userEvent.setup();
+      const { client, chat, models } = createFakeClient(answer({ type: 'done' }));
+      models.mockRejectedValue(
+        new ApiError({ kind: 'network', message: 'Could not reach http://ai.test.' }),
+      );
+      renderPage(client);
+
+      expect(
+        await screen.findByText("Couldn't load the models: questions use the server's default."),
+      ).toBeTruthy();
+      await ask(user, 'Hi');
+
+      expect(chat.mock.calls[0]?.[0]).toEqual({ messages: [{ role: 'user', content: 'Hi' }] });
+    });
   });
 });

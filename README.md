@@ -81,7 +81,9 @@ app, so its routes have no `/cms` prefix.
   protected UI renders.
 - `/assistant` chats with the While Building assistant (`apps/ai` in while-building-api): answers
   about published articles and projects stream in, with the lookups it runs and the sources it used.
-  The conversation stays in memory (gone on reload or sign-out); Stop cancels the answer on the server.
+  The user picks the LLM provider and one of its models from what the server offers (`GET /models`);
+  the server validates the choice. The conversation stays in memory (gone on reload or sign-out);
+  Stop cancels the answer on the server.
 - Users: list (search, role/status filters, pagination), create, edit (name, email, role, password
   reset), enable/disable, delete — all against the users API.
 - Content pages are the CMS foundation: tables, filters, statuses, empty states and permission-aware
