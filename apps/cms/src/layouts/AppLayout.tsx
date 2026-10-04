@@ -1,37 +1,37 @@
-import { useEffect, useState } from 'react';
+import { Separator } from '@while-building/ui/components/separator';
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from '@while-building/ui/components/sidebar';
 import { Outlet } from 'react-router';
-import { Sidebar } from './Sidebar';
-import { Topbar } from './Topbar';
-import styles from './AppLayout.module.css';
+import { AppSidebar } from './AppSidebar';
+import { UserMenu } from './UserMenu';
 
-/** Authenticated shell: sidebar + top bar + page. On small screens the sidebar is a drawer. */
+/** Authenticated shell: collapsible sidebar (a sheet on phones), top bar, page. */
 export function AppLayout() {
-  const [navOpen, setNavOpen] = useState(false);
-
-  useEffect(() => {
-    if (!navOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setNavOpen(false);
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [navOpen]);
-
   return (
-    <div className={styles.shell}>
-      <a href="#main" className="skip-link">
+    <SidebarProvider>
+      <a
+        href="#main"
+        className="sr-only z-50 rounded-md bg-background px-3 py-2 text-sm focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
+      >
         Skip to content
       </a>
-      <Sidebar open={navOpen} onNavigate={() => setNavOpen(false)} />
-      {navOpen && (
-        <div className={styles.scrim} onClick={() => setNavOpen(false)} aria-hidden="true" />
-      )}
-      <div className={styles.main}>
-        <Topbar navOpen={navOpen} onToggleNav={() => setNavOpen((open) => !open)} />
-        <main id="main" tabIndex={-1} className={styles.content}>
+      <AppSidebar />
+      <SidebarInset>
+        <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/90 px-3 backdrop-blur sm:px-4">
+          <SidebarTrigger aria-label="Toggle navigation" />
+          <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-4" />
+          <span className="font-mono text-xs text-muted-foreground">While Building CMS</span>
+          <div className="ml-auto">
+            <UserMenu />
+          </div>
+        </header>
+        <main id="main" tabIndex={-1} className="flex-1 outline-none">
           <Outlet />
         </main>
-      </div>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

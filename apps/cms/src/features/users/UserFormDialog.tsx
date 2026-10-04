@@ -1,17 +1,21 @@
 import { getErrorMessage } from '@while-building/api-client';
 import type { AssignableRole, UpdateUserInput, User } from '@while-building/types';
+import { Alert, AlertDescription } from '@while-building/ui/components/alert';
+import { Button } from '@while-building/ui/components/button';
 import {
-  Alert,
-  Button,
   Dialog,
-  DialogBody,
+  DialogContent,
+  DialogDescription,
   DialogFooter,
-  FormField,
-  Input,
-  Select,
-} from '@while-building/ui';
+  DialogHeader,
+  DialogTitle,
+} from '@while-building/ui/components/dialog';
+import { Input } from '@while-building/ui/components/input';
+import { NativeSelect, NativeSelectOption } from '@while-building/ui/components/native-select';
+import { Spinner } from '@while-building/ui/components/spinner';
 import { isValidEmail, validatePassword } from '@while-building/utils';
 import { useState, type FormEvent } from 'react';
+import { FormField } from '@/components/FormField';
 import { ASSIGNABLE_ROLES, roleLabel } from './roles';
 import { useCreateUser, useUpdateUser } from './queries';
 
@@ -55,16 +59,17 @@ function validate(values: FormValues, isEdit: boolean): FormErrors {
 export function UserFormDialog({ open, onClose, user }: UserFormDialogProps) {
   const isEdit = Boolean(user);
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      title={isEdit ? `Edit ${user?.name}` : 'New user'}
-      description={
-        isEdit ? 'Update their details, role or password.' : 'Create an account for the CMS.'
-      }
-    >
-      {/* Remount per user so the form always starts from that user's values. */}
-      <UserForm key={user?.id ?? 'new'} user={user} onDone={onClose} />
+    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{isEdit ? `Edit ${user?.name}` : 'New user'}</DialogTitle>
+          <DialogDescription>
+            {isEdit ? 'Update their details, role or password.' : 'Create an account for the CMS.'}
+          </DialogDescription>
+        </DialogHeader>
+        {/* Remount per user so the form always starts from that user's values. */}
+        <UserForm key={user?.id ?? 'new'} user={user} onDone={onClose} />
+      </DialogContent>
     </Dialog>
   );
 }
@@ -117,76 +122,82 @@ function UserForm({ user, onDone }: { user?: User; onDone: () => void }) {
   const selectedRole = ASSIGNABLE_ROLES.find((role) => role.value === values.role);
 
   return (
-    <form noValidate onSubmit={onSubmit}>
-      <DialogBody>
-        {mutation.isError && <Alert tone="danger">{getErrorMessage(mutation.error)}</Alert>}
+    <form noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
+      {mutation.isError && (
+        <Alert variant="destructive">
+          <AlertDescription>{getErrorMessage(mutation.error)}</AlertDescription>
+        </Alert>
+      )}
 
-        <FormField label="Name" error={errors.name} required>
-          {(field) => (
-            <Input
-              {...field}
-              name="name"
-              autoComplete="off"
-              value={values.name}
-              onChange={(e) => set('name', e.target.value)}
-            />
-          )}
-        </FormField>
+      <FormField label="Name" error={errors.name} required>
+        {(field) => (
+          <Input
+            {...field}
+            name="name"
+            autoComplete="off"
+            value={values.name}
+            onChange={(e) => set('name', e.target.value)}
+          />
+        )}
+      </FormField>
 
-        <FormField label="Email" error={errors.email} required>
-          {(field) => (
-            <Input
-              {...field}
-              name="email"
-              type="email"
-              autoComplete="off"
-              value={values.email}
-              onChange={(e) => set('email', e.target.value)}
-            />
-          )}
-        </FormField>
+      <FormField label="Email" error={errors.email} required>
+        {(field) => (
+          <Input
+            {...field}
+            name="email"
+            type="email"
+            autoComplete="off"
+            value={values.email}
+            onChange={(e) => set('email', e.target.value)}
+          />
+        )}
+      </FormField>
 
-        <FormField
-          label="Role"
-          hint={`${selectedRole?.description ?? ''} Permissions are enforced by the API.`}
-        >
-          {(field) => (
-            <Select
-              {...field}
-              name="role"
-              value={values.role}
-              onChange={(e) => set('role', e.target.value as AssignableRole)}
-              options={ASSIGNABLE_ROLES.map((role) => ({
-                value: role.value,
-                label: roleLabel(role.value),
-              }))}
-            />
-          )}
-        </FormField>
+      <FormField
+        label="Role"
+        hint={`${selectedRole?.description ?? ''} Permissions are enforced by the API.`}
+      >
+        {(field) => (
+          <NativeSelect
+            {...field}
+            name="role"
+            value={values.role}
+            onChange={(e) => set('role', e.target.value as AssignableRole)}
+            className="w-full"
+          >
+            {ASSIGNABLE_ROLES.map((role) => (
+              <NativeSelectOption key={role.value} value={role.value}>
+                {roleLabel(role.value)}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+        )}
+      </FormField>
 
-        <FormField
-          label={isEdit ? 'New password' : 'Password'}
-          hint={isEdit ? 'Leave blank to keep the current password.' : 'At least 8 characters.'}
-          error={errors.password}
-          required={!isEdit}
-        >
-          {(field) => (
-            <Input
-              {...field}
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              value={values.password}
-              onChange={(e) => set('password', e.target.value)}
-            />
-          )}
-        </FormField>
-      </DialogBody>
+      <FormField
+        label={isEdit ? 'New password' : 'Password'}
+        hint={isEdit ? 'Leave blank to keep the current password.' : 'At least 8 characters.'}
+        error={errors.password}
+        required={!isEdit}
+      >
+        {(field) => (
+          <Input
+            {...field}
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            value={values.password}
+            onChange={(e) => set('password', e.target.value)}
+          />
+        )}
+      </FormField>
       <DialogFooter>
-        <Button variant="secondary" onClick={onDone} disabled={mutation.isPending}>
+        <Button variant="outline" onClick={onDone} disabled={mutation.isPending}>
           Cancel
         </Button>
-        <Button type="submit" loading={mutation.isPending}>
+        <Button type="submit" disabled={mutation.isPending}>
+          {mutation.isPending && <Spinner data-icon="inline-start" />}
           {isEdit ? 'Save changes' : 'Create user'}
         </Button>
       </DialogFooter>

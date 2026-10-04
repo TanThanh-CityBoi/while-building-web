@@ -1,19 +1,19 @@
 import type { Permission } from '@while-building/types';
 import {
-  IconArticle,
-  IconDashboard,
-  IconFolder,
-  IconProject,
-  IconSettings,
-  IconSparkles,
-  IconUsers,
-  type Icon,
-} from '@/components/icons';
+  FileTextIcon,
+  FolderKanbanIcon,
+  FolderOpenIcon,
+  LayoutDashboardIcon,
+  SettingsIcon,
+  SparklesIcon,
+  UsersIcon,
+  type LucideIcon,
+} from 'lucide-react';
 
 export interface NavItem {
   to: string;
   label: string;
-  icon: Icon;
+  icon: LucideIcon;
   /** Hidden unless the user has this permission (UX only). */
   permission?: Permission;
   /** Only mark active on an exact match (for parents with their own children). */
@@ -22,19 +22,29 @@ export interface NavItem {
 }
 
 export const navigation: NavItem[] = [
-  { to: '/dashboard', label: 'Dashboard', icon: IconDashboard },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboardIcon },
   {
     to: '/content',
     label: 'Content',
-    icon: IconFolder,
+    icon: FolderOpenIcon,
     permission: 'CONTENT_READ',
     end: true,
     children: [
-      { to: '/content/articles', label: 'Articles', icon: IconArticle, permission: 'CONTENT_READ' },
-      { to: '/content/projects', label: 'Projects', icon: IconProject, permission: 'CONTENT_READ' },
+      {
+        to: '/content/articles',
+        label: 'Articles',
+        icon: FileTextIcon,
+        permission: 'CONTENT_READ',
+      },
+      {
+        to: '/content/projects',
+        label: 'Projects',
+        icon: FolderKanbanIcon,
+        permission: 'CONTENT_READ',
+      },
     ],
   },
-  { to: '/assistant', label: 'Assistant', icon: IconSparkles, permission: 'CONTENT_READ' },
-  { to: '/users', label: 'Users', icon: IconUsers, permission: 'USERS_READ' },
-  { to: '/settings', label: 'Settings', icon: IconSettings },
+  { to: '/assistant', label: 'Assistant', icon: SparklesIcon, permission: 'CONTENT_READ' },
+  { to: '/users', label: 'Users', icon: UsersIcon, permission: 'USERS_READ' },
+  { to: '/settings', label: 'Settings', icon: SettingsIcon },
 ];

@@ -1,5 +1,4 @@
-// Shared tokens + reset first, then the CMS's overrides.
-import '@while-building/ui/styles.css';
+// Tailwind + the shadcn/ui theme (from @while-building/ui) and the CMS's additions.
 import './styles/global.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';

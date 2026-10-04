@@ -1,5 +1,7 @@
 import { createAiApi } from './endpoints/ai';
+import { createArticlesApi } from './endpoints/articles';
 import { createAuthApi } from './endpoints/auth';
+import { createContentArticlesApi } from './endpoints/content-articles';
 import { createHealthApi } from './endpoints/health';
 import { createUsersApi } from './endpoints/users';
 import { createHttpClient, type HttpClientConfig } from './http';
@@ -23,6 +25,10 @@ export function createApiClient(config: ApiClientConfig) {
     isConfigured: http.isConfigured,
     auth: createAuthApi(http),
     users: createUsersApi(http),
+    /** Published articles (public site). */
+    articles: createArticlesApi(http),
+    /** Content management (CMS). */
+    content: { articles: createContentArticlesApi(http) },
     health: createHealthApi(http),
     ai: createAiApi(http, config.aiBaseUrl),
     session: {

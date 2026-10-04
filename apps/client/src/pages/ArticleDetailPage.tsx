@@ -1,5 +1,6 @@
 import { ErrorState, LoadingState, PageContainer, Tag } from '@while-building/ui';
 import { formatDate } from '@while-building/utils';
+import { lazy, Suspense } from 'react';
 import { Link, useParams } from 'react-router';
 import { ButtonLink } from '@/components/ButtonLink';
 import { useArticle, useArticles } from '@/content/queries';
@@ -8,11 +9,19 @@ import { formatReadingTime } from '@/lib/format';
 import { NotFoundPage } from './NotFoundPage';
 import styles from './DetailPage.module.css';
 
+// BlockNote is only needed here, so it loads with the first article page.
+const ArticleBody = lazy(() => import('@/components/ArticleBody'));
+
 export function ArticleDetailPage() {
   const { slug = '' } = useParams();
   const { data: article, isPending, isError, refetch } = useArticle(slug);
   const { data: articles = [] } = useArticles();
-  usePageMeta({ title: article?.title ?? 'Articles', description: article?.description });
+  usePageMeta({
+    title: article?.title ?? 'Articles',
+    description: article?.excerpt ?? undefined,
+    image: article?.coverImage,
+    type: article ? 'article' : 'website',
+  });
 
   if (isPending) {
     return (
@@ -44,24 +53,24 @@ export function ArticleDetailPage() {
 
         <header className={styles.header}>
           <div className={styles.meta}>
-            <Tag tone="accent">{article.category}</Tag>
+            {article.category && <Tag tone="accent">{article.category}</Tag>}
             {article.publishedAt && (
               <time dateTime={article.publishedAt}>{formatDate(article.publishedAt)}</time>
             )}
             <span>{formatReadingTime(article.readingTimeMinutes)}</span>
           </div>
           <h1 className={styles.title}>{article.title}</h1>
-          <p className={styles.lede}>{article.description}</p>
+          {article.excerpt && <p className={styles.lede}>{article.excerpt}</p>}
+          {article.author && <p className={styles.byline}>By {article.author.name}</p>}
         </header>
 
-        {article.body ? (
-          <div className={styles.body}>{article.body}</div>
-        ) : (
-          <p className={styles.placeholder}>
-            The full write-up is on its way. Articles will be served from the While Building API
-            once the CMS is ready.
-          </p>
+        {article.coverImage && (
+          <img src={article.coverImage} alt="" className={styles.cover} decoding="async" />
         )}
+
+        <Suspense fallback={<LoadingState label="Loading article…" />}>
+          <ArticleBody content={article.content} />
+        </Suspense>
 
         {(newer || older) && (
           <nav className={styles.pager} aria-label="More articles">

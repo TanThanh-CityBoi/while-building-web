@@ -54,10 +54,15 @@ The public website. No authentication.
 | `/projects/:slug` | Project detail                                        |
 | `/about`          | About                                                 |
 
-- Content comes from mock data in `src/content/mock/`, read only through `src/content/source.ts`
-  and the React Query hooks in `src/content/queries.ts`. When the API has content endpoints, only
-  `source.ts` changes.
-- Per-page titles, meta descriptions and Open Graph tags (`usePageMeta`), semantic HTML, favicon.
+- Articles come from the API (`GET /articles`, `GET /articles/:slug`), which only returns published
+  ones: a draft's URL is a 404 there and here. Projects still come from mock data in
+  `src/content/mock/`. Both are read only through `src/content/source.ts` and the React Query hooks
+  in `src/content/queries.ts`.
+- An article's body is rendered read-only by BlockNote (`RichTextViewer` from `@while-building/ui`).
+  It is loaded on demand, so only article pages download the editor engine.
+- Per-page titles, meta descriptions, canonical URL (with `VITE_SITE_URL`) and Open Graph tags
+  (`usePageMeta`; article pages add `og:image` from the cover). The site is a static SPA, so
+  crawlers that don't run JavaScript see the defaults in `index.html`. Semantic HTML, favicon.
 - The footer shows API health (`GET /health`); the site renders fully when the API is down.
 
 ### CMS (`apps/cms`)
@@ -66,16 +71,18 @@ The public website. No authentication.
 publishing, plus users, roles and permissions (media, revisions and workflow later). It is its own
 app, so its routes have no `/cms` prefix.
 
-| Route               | Page                            | Permission     |
-| ------------------- | ------------------------------- | -------------- |
-| `/login`            | Sign in                         | —              |
-| `/dashboard`        | Metrics, recent content, status | —              |
-| `/content`          | Content overview                | `CONTENT_READ` |
-| `/content/articles` | Articles table                  | `CONTENT_READ` |
-| `/content/projects` | Projects table                  | `CONTENT_READ` |
-| `/assistant`        | Ask While Building (AI chat)    | `CONTENT_READ` |
-| `/users`            | User management                 | `USERS_READ`   |
-| `/settings`         | Profile, session, permissions   | —              |
+| Route                        | Page                                                | Permission       |
+| ---------------------------- | --------------------------------------------------- | ---------------- |
+| `/login`                     | Sign in                                             | —                |
+| `/dashboard`                 | Metrics, recent content, status                     | —                |
+| `/content`                   | Content overview                                    | `CONTENT_READ`   |
+| `/content/articles`          | Articles: search, status, sort                      | `CONTENT_READ`   |
+| `/content/articles/new`      | Write a new draft                                   | `CONTENT_CREATE` |
+| `/content/articles/:id/edit` | Article editor (read-only without `CONTENT_UPDATE`) | `CONTENT_READ`   |
+| `/content/projects`          | Projects table (sample data)                        | `CONTENT_READ`   |
+| `/assistant`                 | Ask While Building (AI chat)                        | `CONTENT_READ`   |
+| `/users`                     | User management                                     | `USERS_READ`     |
+| `/settings`                  | Profile, session, permissions                       | —                |
 
 - Every route except `/login` requires a session; the session is restored on startup before any
   protected UI renders.
@@ -86,23 +93,34 @@ app, so its routes have no `/cms` prefix.
   Stop cancels the answer on the server.
 - Users: list (search, role/status filters, pagination), create, edit (name, email, role, password
   reset), enable/disable, delete — all against the users API.
-- Content pages are the CMS foundation: tables, filters, statuses, empty states and permission-aware
-  actions on **sample data**. The editor and publishing workflow are not built yet.
+- Articles are written and published here, against the content API (`/content/articles`):
+  - The list has search, a status filter, sorting and pagination. Its actions follow the user's
+    permissions (edit, publish/unpublish, delete), and each asks for confirmation.
+  - The editor is [BlockNote](https://www.blocknotejs.org/) (`@blocknote/shadcn`), loaded on demand.
+    Type `/` for blocks: headings, lists, checklists, quotes, code, dividers, images by URL.
+  - The body is saved as BlockNote's JSON block document. Title, slug (derived from the title until
+    edited), excerpt, category and cover image sit beside it.
+  - Saving is explicit: Save draft, or ⌘S / Ctrl+S. Unsaved changes are tracked, and leaving the page
+    with some asks first. Publishing an article with unsaved changes saves them first.
+- Projects are still on **sample data** (no project API yet).
+- UI: [shadcn/ui](https://ui.shadcn.com/) components (Base UI, Tailwind CSS v4) from
+  `@while-building/ui/components/*`, with lucide icons. Dark mode follows the OS.
 
 ## Shared packages
 
-| Package                      | Contents                                                                                                                                                                                                                                                             |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@while-building/ui`         | Button, Input, Textarea, Select, FormField, Card, Dialog, Dropdown, Table primitives, Badge, Avatar, Tag, Alert, Empty/Loading/Error states, PageContainer, PageHeader, design tokens. No routing, auth or business logic. See [packages/ui](packages/ui/README.md). |
-| `@while-building/types`      | API contract types: `User`, `Role`, `Permission`, `UserStatus`, `AuthUser`, `Article`, `Project`, `ApiResponse`, `Pagination`… No passwords or tokens.                                                                                                               |
-| `@while-building/utils`      | Date formatting, initials/pluralization, URL/query helpers, email/password checks, brand constants, `cx`.                                                                                                                                                            |
-| `@while-building/api-client` | The single HTTP layer for both apps: base URL, errors, in-memory access token, refresh-on-401, auth/users/health endpoints, and the assistant's streaming chat (`api.ai`). See [packages/api-client](packages/api-client/README.md).                                 |
-| `@while-building/config`     | Shared `tsconfig` bases and ESLint flat-config presets. Prettier is configured once at the root.                                                                                                                                                                     |
+| Package                      | Contents                                                                                                                                                                                                                                                                                                               |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@while-building/ui`         | The CMS's shadcn/ui components and Tailwind theme (`components/*`, `globals.css`). The public site's CSS Modules kit (root export, `styles.css`). The shared BlockNote schema and read-only `RichTextViewer` (`rich-text`). No routing, auth or business logic. See [packages/ui](packages/ui/README.md).              |
+| `@while-building/types`      | API contract types: `User`, `Role`, `Permission`, `UserStatus`, `AuthUser`, `Article`/`ArticleSummary` (public), `ManagedArticle` (CMS), `ArticleContent`, `Project`, `ApiResponse`, `Pagination`… No passwords or tokens.                                                                                             |
+| `@while-building/utils`      | Date formatting, initials/pluralization, `slugify`/`isValidSlug`, URL/query helpers, email/password checks, brand constants, `cx`.                                                                                                                                                                                     |
+| `@while-building/api-client` | The single HTTP layer for both apps: base URL, errors, in-memory access token, refresh-on-401, auth/users/health endpoints, published articles (`api.articles`), article management (`api.content.articles`), and the assistant's streaming chat (`api.ai`). See [packages/api-client](packages/api-client/README.md). |
+| `@while-building/config`     | Shared `tsconfig` bases and ESLint flat-config presets. Prettier is configured once at the root.                                                                                                                                                                                                                       |
 
 ## Technology
 
 React 19 · Vite 8 · TypeScript 6 (strict) · pnpm 12 workspaces · Turborepo 2 · React Router 8 ·
-TanStack React Query 5 · CSS Modules + CSS custom properties · ESLint 10 · Prettier · Vitest + Testing Library.
+TanStack React Query 5 · CMS: shadcn/ui (Base UI) + Tailwind CSS 4 · public site: CSS Modules + CSS custom
+properties · BlockNote · ESLint 10 · Prettier · Vitest + Testing Library.
 
 ## Requirements
 
@@ -148,7 +166,7 @@ pnpm typecheck
 ## Test
 
 ```bash
-pnpm test           # Vitest: utils, api-client, CMS auth/permissions and assistant
+pnpm test           # Vitest: utils, api-client, CMS auth/permissions, articles and assistant
 pnpm check          # typecheck + lint + test + build in one Turborepo run (CI)
 ```
 
@@ -156,11 +174,12 @@ pnpm check          # typecheck + lint + test + build in one Turborepo run (CI)
 
 Each app has its own `.env` (git-ignored) created from its `.env.example`.
 
-| App           | Variable       | Example                 | Notes                                                                         |
-| ------------- | -------------- | ----------------------- | ----------------------------------------------------------------------------- |
-| `apps/client` | `VITE_API_URL` | `http://localhost:3000` | Optional. Without it the footer shows "API not configured".                   |
-| `apps/cms`    | `VITE_API_URL` | `http://localhost:3000` | Required for sign-in. The API must allow the CMS origin with credentials.     |
-| `apps/cms`    | `VITE_AI_URL`  | `http://localhost:3004` | Optional: the assistant (`/assistant`). The AI app must allow the CMS origin. |
+| App           | Variable        | Example                     | Notes                                                                         |
+| ------------- | --------------- | --------------------------- | ----------------------------------------------------------------------------- |
+| `apps/client` | `VITE_API_URL`  | `http://localhost:3000`     | Articles come from the API; without it the footer shows "API not configured". |
+| `apps/client` | `VITE_SITE_URL` | `https://whilebuilding.dev` | Optional: the public origin, for canonical URLs and `og:url`.                 |
+| `apps/cms`    | `VITE_API_URL`  | `http://localhost:3000`     | Required for sign-in. The API must allow the CMS origin with credentials.     |
+| `apps/cms`    | `VITE_AI_URL`   | `http://localhost:3004`     | Optional: the assistant (`/assistant`). The AI app must allow the CMS origin. |
 
 `VITE_*` variables are embedded in the bundle at build time — never put secrets in them. Set
 production values in the hosting provider's build settings.
@@ -227,10 +246,9 @@ separately to Firebase Hosting, Cloudflare Pages or any static host. Each needs 
 
 Not implemented yet:
 
-- Article and project management in the CMS (content API + editor)
-- Rich text / Markdown editor
-- Drafts and publishing workflow
-- Media management
+- Project management in the CMS
+- Autosave, revisions, scheduled publishing
+- Media management (uploads; images are embedded by URL today)
 - Tags and categories
 - Revisions
 - Comments

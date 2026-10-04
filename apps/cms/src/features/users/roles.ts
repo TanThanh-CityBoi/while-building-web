@@ -1,5 +1,5 @@
 import type { AssignableRole, Role, UserStatus } from '@while-building/types';
-import type { BadgeTone } from '@while-building/ui';
+import type { Tone } from '@/components/ToneBadge';
 
 const ROLE_LABELS: Record<Role, string> = {
   ROOT: 'Root',
@@ -20,8 +20,8 @@ export const ASSIGNABLE_ROLES: ReadonlyArray<{ value: AssignableRole; descriptio
   { value: 'AUTHOR', description: 'Writes and edits content.' },
 ];
 
-export const roleTone: Record<Role, BadgeTone> = {
-  ROOT: 'accent',
+export const roleTone: Record<Role, Tone> = {
+  ROOT: 'brand',
   ADMIN: 'info',
   EDITOR: 'success',
   AUTHOR: 'neutral',

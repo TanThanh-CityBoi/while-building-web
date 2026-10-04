@@ -1,11 +1,10 @@
-import type { Article, ContentStatus, Project } from '@while-building/types';
-import { mockArticles, mockProjects } from './mock';
+import type { ContentStatus, Project } from '@while-building/types';
+import { mockProjects } from './mock';
 
-// CMS content source. Reads sample data today; when while-building-api gets content endpoints,
-// replace these bodies with api-client calls (e.g. `api.articles.list(params)`). The filter
-// params already mirror what a list endpoint would take, so pages won't need to change.
+// Projects source. Reads sample data until while-building-api manages projects; replace these
+// bodies with api-client calls then. (Articles come from the API: features/articles.)
 
-export interface ContentListParams {
+export interface ProjectListParams {
   search?: string;
   status?: ContentStatus;
 }
@@ -19,14 +18,7 @@ function matches(text: string[], search?: string) {
   return text.some((value) => value.toLowerCase().includes(needle));
 }
 
-export async function fetchArticles({ search, status }: ContentListParams = {}) {
-  return mockArticles
-    .filter((article) => !status || article.status === status)
-    .filter((article) => matches([article.title, article.slug, article.category], search))
-    .sort(byUpdatedDesc) satisfies Article[];
-}
-
-export async function fetchProjects({ search, status }: ContentListParams = {}) {
+export async function fetchProjects({ search, status }: ProjectListParams = {}) {
   return mockProjects
     .filter((project) => !status || project.status === status)
     .filter((project) => matches([project.name, project.slug, ...project.technologies], search))

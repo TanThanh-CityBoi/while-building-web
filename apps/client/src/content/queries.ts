@@ -10,12 +10,18 @@ export const contentKeys = {
 
 /** Published articles, newest first. */
 export function useArticles() {
-  return useQuery({ queryKey: contentKeys.articles, queryFn: fetchArticles });
+  return useQuery({
+    queryKey: contentKeys.articles,
+    queryFn: ({ signal }) => fetchArticles(signal),
+  });
 }
 
 /** A published article, or `null` when the slug doesn't exist. */
 export function useArticle(slug: string) {
-  return useQuery({ queryKey: contentKeys.article(slug), queryFn: () => fetchArticle(slug) });
+  return useQuery({
+    queryKey: contentKeys.article(slug),
+    queryFn: ({ signal }) => fetchArticle(slug, signal),
+  });
 }
 
 export function useProjects() {

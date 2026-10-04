@@ -1,69 +1,102 @@
 import type { ContentStatus } from '@while-building/types';
-import { Badge, Button, Dialog, DialogBody, DialogFooter, Input, Select } from '@while-building/ui';
+import { Button } from '@while-building/ui/components/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@while-building/ui/components/dialog';
+import { Input } from '@while-building/ui/components/input';
+import { NativeSelect, NativeSelectOption } from '@while-building/ui/components/native-select';
+import { SearchIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { Toolbar } from '@/components/Toolbar';
-import { contentStatusLabel, contentStatusOptions, contentStatusTone } from './status';
+import { ToneBadge } from '@/components/ToneBadge';
+import { contentStatusLabel, contentStatusTone, type StatusOption } from './status';
 
 export function ContentStatusBadge({ status }: { status: ContentStatus }) {
-  return <Badge tone={contentStatusTone[status]}>{contentStatusLabel[status]}</Badge>;
+  return <ToneBadge tone={contentStatusTone[status]}>{contentStatusLabel[status]}</ToneBadge>;
 }
 
-interface ContentFiltersProps {
+interface ContentFiltersProps<S extends string> {
   noun: string;
   search: string;
-  status: ContentStatus | '';
+  status: S | '';
+  statusOptions: StatusOption<S>[];
   onSearchChange: (value: string) => void;
-  onStatusChange: (value: ContentStatus | '') => void;
+  onStatusChange: (value: S | '') => void;
   summary?: string;
+  /** More controls after the status filter (e.g. sorting). */
+  extra?: ReactNode;
 }
 
-export function ContentFilters({
+/** Search + status filter above a content table. */
+export function ContentFilters<S extends string>({
   noun,
   search,
   status,
+  statusOptions,
   onSearchChange,
   onStatusChange,
   summary,
-}: ContentFiltersProps) {
+  extra,
+}: ContentFiltersProps<S>) {
   return (
     <Toolbar summary={summary}>
-      <Input
-        type="search"
-        controlSize="sm"
-        placeholder={`Search ${noun}…`}
-        aria-label={`Search ${noun}`}
-        value={search}
-        onChange={(e) => onSearchChange(e.target.value)}
-      />
-      <Select
-        controlSize="sm"
+      <div className="relative">
+        <SearchIcon
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+        />
+        <Input
+          type="search"
+          placeholder={`Search ${noun}…`}
+          aria-label={`Search ${noun}`}
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="pl-8"
+        />
+      </div>
+      <NativeSelect
         aria-label="Filter by status"
         value={status}
-        onChange={(e) => onStatusChange(e.target.value as ContentStatus | '')}
-        options={contentStatusOptions}
-      />
+        onChange={(e) => onStatusChange(e.target.value as S | '')}
+      >
+        {statusOptions.map((option) => (
+          <NativeSelectOption key={option.value} value={option.value}>
+            {option.label}
+          </NativeSelectOption>
+        ))}
+      </NativeSelect>
+      {extra}
     </Toolbar>
   );
 }
 
 interface NotBuiltYetDialogProps {
-  /** e.g. "Edit “Running PostgreSQL…”" — `null` keeps the dialog closed. */
+  /** e.g. "Edit “Personal Homelab”" — `null` keeps the dialog closed. */
   action: string | null;
   onClose: () => void;
 }
 
-/** Placeholder for CMS actions whose editor/workflow isn't built yet. */
+/** Placeholder for project actions: projects aren't managed through the API yet. */
 export function NotBuiltYetDialog({ action, onClose }: NotBuiltYetDialogProps) {
   return (
-    <Dialog open={action !== null} onClose={onClose} title={action ?? ''} size="sm">
-      <DialogBody>
-        <p>
-          The content editor and publishing workflow aren’t built yet. This action will be available
-          once while-building-api exposes content endpoints.
-        </p>
-      </DialogBody>
-      <DialogFooter>
-        <Button onClick={onClose}>Got it</Button>
-      </DialogFooter>
+    <Dialog open={action !== null} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{action}</DialogTitle>
+          <DialogDescription>
+            Project management isn’t built yet. This action will be available once
+            while-building-api exposes project endpoints.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button onClick={onClose}>Got it</Button>
+        </DialogFooter>
+      </DialogContent>
     </Dialog>
   );
 }

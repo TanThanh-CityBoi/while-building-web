@@ -1,12 +1,23 @@
 import { useMutation } from '@tanstack/react-query';
 import { getErrorMessage, isApiError } from '@while-building/api-client';
 import type { LoginCredentials } from '@while-building/types';
-import { Alert, Badge, Button, FormField, Input } from '@while-building/ui';
+import { Alert, AlertDescription } from '@while-building/ui/components/alert';
+import { Button } from '@while-building/ui/components/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@while-building/ui/components/card';
+import { Input } from '@while-building/ui/components/input';
+import { Spinner } from '@while-building/ui/components/spinner';
 import { isValidEmail } from '@while-building/utils';
 import { useState, type FormEvent } from 'react';
 import { useAuth } from '@/auth/useAuth';
+import { Brand } from '@/components/Brand';
+import { FormField } from '@/components/FormField';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
-import styles from './LoginPage.module.css';
 
 type FormErrors = Partial<Record<keyof LoginCredentials, string>>;
 
@@ -48,66 +59,74 @@ export function LoginPage() {
   };
 
   return (
-    <main className={styles.page}>
-      <div className={styles.panel}>
-        <div className={styles.brand}>
-          <span className={styles.prompt} aria-hidden="true">
-            &gt;_
-          </span>
-          While Building
-          <Badge tone="accent">CMS</Badge>
-        </div>
+    <main className="grid min-h-svh place-items-center bg-muted/40 px-4 py-10">
+      <div className="flex w-full max-w-sm flex-col gap-6">
+        <Brand className="self-center text-base" />
 
-        <div className={styles.card}>
-          <div className={styles.heading}>
-            <h1 className={styles.title}>Sign in</h1>
-            <p className={styles.subtitle}>Use your While Building account.</p>
-          </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">
+              <h1>Sign in</h1>
+            </CardTitle>
+            <CardDescription>Use your While Building account.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            {signOutReason === 'expired' && !signIn.isError && (
+              <Alert>
+                <AlertDescription>Your session has expired. Please sign in again.</AlertDescription>
+              </Alert>
+            )}
+            {signOutReason === 'logout-incomplete' && !signIn.isError && (
+              <Alert>
+                <AlertDescription>
+                  You’ve been signed out on this device, but the server couldn’t be reached to end
+                  the session.
+                </AlertDescription>
+              </Alert>
+            )}
+            {signIn.isError && (
+              <Alert variant="destructive">
+                <AlertDescription>{loginErrorMessage(signIn.error)}</AlertDescription>
+              </Alert>
+            )}
 
-          {signOutReason === 'expired' && !signIn.isError && (
-            <Alert tone="warning">Your session has expired. Please sign in again.</Alert>
-          )}
-          {signOutReason === 'logout-incomplete' && !signIn.isError && (
-            <Alert tone="warning">
-              You’ve been signed out on this device, but the server couldn’t be reached to end the
-              session.
-            </Alert>
-          )}
-          {signIn.isError && <Alert tone="danger">{loginErrorMessage(signIn.error)}</Alert>}
+            <form noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
+              <FormField label="Email" error={errors.email}>
+                {(field) => (
+                  <Input
+                    {...field}
+                    name="email"
+                    type="email"
+                    autoComplete="username"
+                    autoFocus
+                    value={values.email}
+                    onChange={(e) => setValues((v) => ({ ...v, email: e.target.value }))}
+                  />
+                )}
+              </FormField>
+              <FormField label="Password" error={errors.password}>
+                {(field) => (
+                  <Input
+                    {...field}
+                    name="password"
+                    type="password"
+                    autoComplete="current-password"
+                    value={values.password}
+                    onChange={(e) => setValues((v) => ({ ...v, password: e.target.value }))}
+                  />
+                )}
+              </FormField>
+              <Button type="submit" disabled={signIn.isPending} className="w-full">
+                {signIn.isPending && <Spinner data-icon="inline-start" />}
+                {signIn.isPending ? 'Signing in…' : 'Sign in'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
-          <form noValidate onSubmit={onSubmit} className={styles.form}>
-            <FormField label="Email" error={errors.email}>
-              {(field) => (
-                <Input
-                  {...field}
-                  name="email"
-                  type="email"
-                  autoComplete="username"
-                  autoFocus
-                  value={values.email}
-                  onChange={(e) => setValues((v) => ({ ...v, email: e.target.value }))}
-                />
-              )}
-            </FormField>
-            <FormField label="Password" error={errors.password}>
-              {(field) => (
-                <Input
-                  {...field}
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={values.password}
-                  onChange={(e) => setValues((v) => ({ ...v, password: e.target.value }))}
-                />
-              )}
-            </FormField>
-            <Button type="submit" loading={signIn.isPending} className={styles.submit}>
-              {signIn.isPending ? 'Signing in…' : 'Sign in'}
-            </Button>
-          </form>
-        </div>
-
-        <p className={styles.footnote}>Accounts are created by an administrator.</p>
+        <p className="text-center text-xs text-muted-foreground">
+          Accounts are created by an administrator.
+        </p>
       </div>
     </main>
   );

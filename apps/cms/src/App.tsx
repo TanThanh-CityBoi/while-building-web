@@ -1,4 +1,6 @@
 import { QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from '@while-building/ui/components/sonner';
+import { TooltipProvider } from '@while-building/ui/components/tooltip';
 import { RouterProvider } from 'react-router/dom';
 import { AuthProvider } from '@/auth/AuthProvider';
 import { api } from '@/lib/api';
@@ -11,7 +13,10 @@ export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider api={api}>
-        <RouterProvider router={router} />
+        <TooltipProvider>
+          <RouterProvider router={router} />
+          <Toaster position="bottom-right" />
+        </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

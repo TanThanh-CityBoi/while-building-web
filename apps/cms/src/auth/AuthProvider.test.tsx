@@ -219,7 +219,7 @@ describe('logout and expiry', () => {
     const { router, queryClient, user } = renderApp(api, '/dashboard');
 
     await user.click(await screen.findByRole('button', { name: 'Account menu for Ada Lovelace' }));
-    await user.click(screen.getByRole('menuitem', { name: 'Log out' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Log out' }));
 
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeTruthy();
     expect(router.state.location.pathname).toBe('/login');

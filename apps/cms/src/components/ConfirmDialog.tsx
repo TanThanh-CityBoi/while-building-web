@@ -1,5 +1,16 @@
 import { getErrorMessage } from '@while-building/api-client';
-import { Alert, Button, Dialog, DialogBody, DialogFooter } from '@while-building/ui';
+import { Alert, AlertDescription } from '@while-building/ui/components/alert';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@while-building/ui/components/alert-dialog';
+import { Button } from '@while-building/ui/components/button';
+import { Spinner } from '@while-building/ui/components/spinner';
 import { useState, type ReactNode } from 'react';
 
 interface ConfirmDialogProps {
@@ -26,6 +37,7 @@ export function ConfirmDialog({
   const [error, setError] = useState<unknown>(null);
 
   const close = () => {
+    if (pending) return;
     setError(null);
     onClose();
   };
@@ -35,34 +47,38 @@ export function ConfirmDialog({
     setError(null);
     try {
       await onConfirm();
+      setPending(false);
       onClose();
     } catch (caught) {
-      setError(caught);
-    } finally {
       setPending(false);
+      setError(caught);
     }
   };
 
   return (
-    <Dialog open={open} onClose={close} title={title} size="sm" dismissible={!pending}>
-      {(description || error !== null) && (
-        <DialogBody>
-          {description && <p>{description}</p>}
-          {error !== null && <Alert tone="danger">{getErrorMessage(error)}</Alert>}
-        </DialogBody>
-      )}
-      <DialogFooter>
-        <Button variant="secondary" onClick={close} disabled={pending}>
-          Cancel
-        </Button>
-        <Button
-          variant={tone === 'danger' ? 'danger' : 'primary'}
-          onClick={() => void confirm()}
-          loading={pending}
-        >
-          {confirmLabel}
-        </Button>
-      </DialogFooter>
-    </Dialog>
+    <AlertDialog open={open} onOpenChange={(next) => !next && close()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          {description && <AlertDialogDescription>{description}</AlertDialogDescription>}
+        </AlertDialogHeader>
+        {error !== null && (
+          <Alert variant="destructive">
+            <AlertDescription>{getErrorMessage(error)}</AlertDescription>
+          </Alert>
+        )}
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+          <Button
+            variant={tone === 'danger' ? 'destructive' : 'default'}
+            onClick={() => void confirm()}
+            disabled={pending}
+          >
+            {pending && <Spinner data-icon="inline-start" />}
+            {confirmLabel}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

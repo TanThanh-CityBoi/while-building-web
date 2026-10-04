@@ -36,9 +36,19 @@
   color: var(--color-text-muted);
 }
 
-.body {
-  font-size: var(--text-lg);
-  white-space: pre-line;
+.byline {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.cover {
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
 }
 
 .placeholder {

@@ -436,3 +436,75 @@ describe('assistant (ai.chat)', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 });
+
+describe('articles', () => {
+  const article = {
+    id: 'a1',
+    slug: 'k3s-homelab',
+    title: 'My k3s Homelab',
+    excerpt: null,
+    category: 'Kubernetes',
+    coverImage: null,
+    author: { id: 'u1', name: 'Ada' },
+    publishedAt: '2026-09-12T00:00:00.000Z',
+    readingTimeMinutes: 3,
+    createdAt: '',
+    updatedAt: '',
+    content: [{ type: 'paragraph', content: [] }],
+  };
+
+  it('reads published articles without credentials and encodes slugs', async () => {
+    const { fetch, calls } = createFetch({
+      'GET /articles': () =>
+        json({ data: [article], meta: { page: 1, pageSize: 10, total: 1, totalPages: 1 } }),
+      'GET /articles/k3s-homelab': () => json({ data: article }),
+    });
+    const api = createApiClient({ baseUrl: BASE_URL, fetch });
+
+    const page = await api.articles.list({ category: 'Kubernetes', search: '' });
+    expect(page.data).toHaveLength(1);
+    expect(calls[0]!.url.search).toBe('?category=Kubernetes');
+    expect(await api.articles.get('k3s-homelab')).toEqual(article);
+  });
+
+  it('reports a draft or unknown slug as a 404 ApiError', async () => {
+    const { fetch } = createFetch({});
+    const api = createApiClient({ baseUrl: BASE_URL, fetch });
+    await expect(api.articles.get('draft')).rejects.toMatchObject({ kind: 'http', status: 404 });
+  });
+
+  it('manages articles under /content/articles', async () => {
+    const managed = { ...article, status: 'DRAFT' };
+    const { fetch, calls } = createFetch({
+      'GET /content/articles': () =>
+        json({ data: [managed], meta: { page: 1, pageSize: 20, total: 1, totalPages: 1 } }),
+      'POST /content/articles': () => json({ data: managed }, 201),
+      'PATCH /content/articles/a1': () => json({ data: { ...managed, title: 'New' } }),
+      'POST /content/articles/a1/publish': () =>
+        json({ data: { ...managed, status: 'PUBLISHED' } }),
+      'POST /content/articles/a1/unpublish': () => json({ data: managed }),
+      'DELETE /content/articles/a1': () => new Response(null, { status: 204 }),
+    });
+    const api = createApiClient({ baseUrl: BASE_URL, fetch });
+
+    await api.content.articles.list({ status: 'DRAFT', sort: 'title', order: 'asc' });
+    expect(calls[0]!.url.search).toBe('?status=DRAFT&sort=title&order=asc');
+
+    await api.content.articles.create({ title: 'My k3s Homelab', content: [] });
+    expect(JSON.parse(String(calls[1]!.init.body))).toEqual({
+      title: 'My k3s Homelab',
+      content: [],
+    });
+
+    expect((await api.content.articles.update('a1', { excerpt: null })).title).toBe('New');
+    expect(JSON.parse(String(calls[2]!.init.body))).toEqual({ excerpt: null });
+    expect((await api.content.articles.publish('a1')).status).toBe('PUBLISHED');
+    expect((await api.content.articles.unpublish('a1')).status).toBe('DRAFT');
+    await api.content.articles.remove('a1');
+    expect(calls.map((call) => call.key).slice(3)).toEqual([
+      'POST /content/articles/a1/publish',
+      'POST /content/articles/a1/unpublish',
+      'DELETE /content/articles/a1',
+    ]);
+  });
+});
