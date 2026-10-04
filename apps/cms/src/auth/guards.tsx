@@ -1,9 +1,10 @@
 import { getErrorMessage } from '@while-building/api-client';
 import type { Permission } from '@while-building/types';
-import { Button, ErrorState, LoadingState } from '@while-building/ui';
+import { Button } from '@while-building/ui/components/button';
 import type { ReactNode } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router';
 import { ForbiddenState } from '@/components/ForbiddenState';
+import { ErrorState, LoadingState } from '@/components/States';
 import { getPostLoginPath, type LoginLocationState } from './redirect';
 import { useAuth } from './useAuth';
 

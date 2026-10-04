@@ -1,8 +1,10 @@
-// Styles: import '@while-building/ui/styles.css' once per app (tokens + reset).
+// The original CSS Modules kit (used by the public site). Styles: import
+// '@while-building/ui/styles.css' once per app (tokens + reset). The CMS uses the
+// shadcn/ui components instead: '@while-building/ui/components/*' + 'globals.css'.
 
-export { Alert, type AlertProps } from './components/Alert';
-export { Avatar, type AvatarProps } from './components/Avatar';
-export { Badge, type BadgeProps, type BadgeTone } from './components/Badge';
+export { Alert, type AlertProps } from './legacy/Alert';
+export { Avatar, type AvatarProps } from './legacy/Avatar';
+export { Badge, type BadgeProps, type BadgeTone } from './legacy/Badge';
 export {
   Button,
   buttonClassName,
@@ -10,22 +12,22 @@ export {
   type ButtonSize,
   type ButtonStyleOptions,
   type ButtonVariant,
-} from './components/Button';
-export { Card, CardHeader, type CardHeaderProps, type CardProps } from './components/Card';
-export { Dialog, DialogBody, DialogFooter, type DialogProps } from './components/Dialog';
+} from './legacy/Button';
+export { Card, CardHeader, type CardHeaderProps, type CardProps } from './legacy/Card';
+export { Dialog, DialogBody, DialogFooter, type DialogProps } from './legacy/Dialog';
 export {
   Dropdown,
   type DropdownEntry,
   type DropdownItem,
   type DropdownProps,
   type DropdownSeparator,
-} from './components/Dropdown';
-export { FormField, type FieldControlProps, type FormFieldProps } from './components/FormField';
-export { Input, type InputProps } from './components/Input';
-export { PageContainer } from './components/PageContainer';
-export { PageHeader, type PageHeaderProps } from './components/PageHeader';
-export { Select, type SelectOption, type SelectProps } from './components/Select';
-export { Spinner } from './components/Spinner';
+} from './legacy/Dropdown';
+export { FormField, type FieldControlProps, type FormFieldProps } from './legacy/FormField';
+export { Input, type InputProps } from './legacy/Input';
+export { PageContainer } from './legacy/PageContainer';
+export { PageHeader, type PageHeaderProps } from './legacy/PageHeader';
+export { Select, type SelectOption, type SelectProps } from './legacy/Select';
+export { Spinner } from './legacy/Spinner';
 export {
   EmptyState,
   ErrorState,
@@ -33,7 +35,7 @@ export {
   type EmptyStateProps,
   type ErrorStateProps,
   type LoadingStateProps,
-} from './components/States';
+} from './legacy/States';
 export {
   Table,
   TableBody,
@@ -44,6 +46,6 @@ export {
   TableRow,
   type TableCellProps,
   type TableHeaderCellProps,
-} from './components/Table';
-export { Tag, TagList, type TagListProps, type TagProps } from './components/Tag';
-export { Textarea, type TextareaProps } from './components/Textarea';
+} from './legacy/Table';
+export { Tag, TagList, type TagListProps, type TagProps } from './legacy/Tag';
+export { Textarea, type TextareaProps } from './legacy/Textarea';

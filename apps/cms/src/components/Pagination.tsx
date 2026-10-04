@@ -1,6 +1,5 @@
 import type { Pagination as PaginationMeta } from '@while-building/types';
-import { Button } from '@while-building/ui';
-import styles from './Pagination.module.css';
+import { Button } from '@while-building/ui/components/button';
 
 interface PaginationProps {
   meta: PaginationMeta;
@@ -14,13 +13,16 @@ export function Pagination({ meta, onPageChange, disabled = false }: PaginationP
   const last = Math.min(page * pageSize, total);
 
   return (
-    <nav className={styles.pagination} aria-label="Pagination">
-      <p className={styles.summary}>
+    <nav
+      aria-label="Pagination"
+      className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3"
+    >
+      <p className="text-xs text-muted-foreground tabular-nums">
         {total === 0 ? 'No results' : `Showing ${first}–${last} of ${total}`}
       </p>
-      <div className={styles.buttons}>
+      <div className="flex gap-2">
         <Button
-          variant="secondary"
+          variant="outline"
           size="sm"
           onClick={() => onPageChange(page - 1)}
           disabled={disabled || page <= 1}
@@ -28,7 +30,7 @@ export function Pagination({ meta, onPageChange, disabled = false }: PaginationP
           Previous
         </Button>
         <Button
-          variant="secondary"
+          variant="outline"
           size="sm"
           onClick={() => onPageChange(page + 1)}
           disabled={disabled || page >= totalPages}

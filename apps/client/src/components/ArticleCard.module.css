@@ -61,11 +61,32 @@
   color: var(--color-text-muted);
 }
 
-/* Journal layout: date in its own column on wider screens. */
+/* A cover, when there is one, sits under the text on phones. */
+.cover {
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+/* Journal layout: date in its own column on wider screens, cover on the right. */
 @media (min-width: 40rem) {
   .card {
     grid-template-columns: 9rem 1fr;
     gap: var(--space-5);
+  }
+
+  .card:has(.cover) {
+    grid-template-columns: 9rem 1fr 10rem;
+  }
+
+  .cover {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: start;
+    aspect-ratio: 4 / 3;
   }
 
   .date {

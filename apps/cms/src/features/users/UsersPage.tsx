@@ -1,47 +1,49 @@
 import { getErrorMessage, isApiError } from '@while-building/api-client';
 import type { AssignableRole, User, UserStatus } from '@while-building/types';
+import { Avatar, AvatarFallback } from '@while-building/ui/components/avatar';
+import { Button } from '@while-building/ui/components/button';
+import { Card } from '@while-building/ui/components/card';
 import {
-  Avatar,
-  Badge,
-  Button,
-  Card,
-  Dropdown,
-  EmptyState,
-  ErrorState,
-  Input,
-  LoadingState,
-  PageContainer,
-  PageHeader,
-  Select,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@while-building/ui/components/dropdown-menu';
+import { Input } from '@while-building/ui/components/input';
+import { NativeSelect, NativeSelectOption } from '@while-building/ui/components/native-select';
+import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
-  TableHeaderCell,
+  TableHeader,
   TableRow,
-} from '@while-building/ui';
-import { formatDate, pluralize } from '@while-building/utils';
+} from '@while-building/ui/components/table';
+import { formatDate, getInitials, pluralize } from '@while-building/utils';
+import {
+  BanIcon,
+  CircleCheckIcon,
+  MoreHorizontalIcon,
+  PencilIcon,
+  PlusIcon,
+  SearchIcon,
+  Trash2Icon,
+  UsersIcon,
+} from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/auth/useAuth';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import {
-  IconBan,
-  IconCheckCircle,
-  IconMore,
-  IconPencil,
-  IconPlus,
-  IconTrash,
-  IconUsers,
-} from '@/components/icons';
+import { Page, PageHeader } from '@/components/Page';
 import { Pagination } from '@/components/Pagination';
+import { EmptyState, ErrorState, LoadingState } from '@/components/States';
+import { ToneBadge } from '@/components/ToneBadge';
 import { Toolbar } from '@/components/Toolbar';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { ASSIGNABLE_ROLES, roleLabel, roleTone, statusLabel } from './roles';
 import { useDeleteUser, useUpdateUserStatus, useUsers } from './queries';
 import { UserFormDialog } from './UserFormDialog';
-import styles from './UsersPage.module.css';
 
 const PAGE_SIZE = 20;
 
@@ -86,7 +88,7 @@ export function UsersPage() {
   const close = () => setAction(null);
 
   return (
-    <PageContainer>
+    <Page>
       <PageHeader
         eyebrow="Administration"
         title="Users"
@@ -97,26 +99,31 @@ export function UsersPage() {
             disabled={!canCreate}
             title={canCreate ? undefined : 'Requires the USERS_CREATE permission'}
           >
-            <IconPlus /> New user
+            <PlusIcon data-icon="inline-start" /> New user
           </Button>
         }
       />
 
-      <Card padding="none">
+      <Card className="gap-0 py-0">
         <Toolbar summary={users.data && pluralize(users.data.meta.total, 'user')}>
-          <Input
-            type="search"
-            controlSize="sm"
-            placeholder="Search by name or email…"
-            aria-label="Search users"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-          />
-          <Select
-            controlSize="sm"
+          <div className="relative">
+            <SearchIcon
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+              type="search"
+              placeholder="Search by name or email…"
+              aria-label="Search users"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="pl-8"
+            />
+          </div>
+          <NativeSelect
             aria-label="Filter by role"
             value={role}
             onChange={(e) => {
@@ -124,15 +131,14 @@ export function UsersPage() {
               setPage(1);
             }}
           >
-            <option value="">All roles</option>
+            <NativeSelectOption value="">All roles</NativeSelectOption>
             {ASSIGNABLE_ROLES.map((option) => (
-              <option key={option.value} value={option.value}>
+              <NativeSelectOption key={option.value} value={option.value}>
                 {roleLabel(option.value)}
-              </option>
+              </NativeSelectOption>
             ))}
-          </Select>
-          <Select
-            controlSize="sm"
+          </NativeSelect>
+          <NativeSelect
             aria-label="Filter by status"
             value={status}
             onChange={(e) => {
@@ -140,10 +146,10 @@ export function UsersPage() {
               setPage(1);
             }}
           >
-            <option value="">All statuses</option>
-            <option value="ACTIVE">Active</option>
-            <option value="DISABLED">Disabled</option>
-          </Select>
+            <NativeSelectOption value="">All statuses</NativeSelectOption>
+            <NativeSelectOption value="ACTIVE">Active</NativeSelectOption>
+            <NativeSelectOption value="DISABLED">Disabled</NativeSelectOption>
+          </NativeSelect>
         </Toolbar>
 
         {users.isPending ? (
@@ -161,23 +167,23 @@ export function UsersPage() {
         ) : users.data.data.length === 0 ? (
           hasFilters ? (
             <EmptyState
-              icon={<IconUsers />}
+              icon={<UsersIcon />}
               title="No users match your filters"
               action={
-                <Button variant="secondary" size="sm" onClick={resetFilters}>
+                <Button variant="outline" size="sm" onClick={resetFilters}>
                   Clear filters
                 </Button>
               }
             />
           ) : (
             <EmptyState
-              icon={<IconUsers />}
+              icon={<UsersIcon />}
               title="No users yet"
               description="Invite editors and authors to help manage content."
               action={
                 canCreate && (
                   <Button size="sm" onClick={() => setAction({ type: 'create' })}>
-                    <IconPlus /> New user
+                    <PlusIcon data-icon="inline-start" /> New user
                   </Button>
                 )
               }
@@ -185,96 +191,109 @@ export function UsersPage() {
           )
         ) : (
           <>
-            <TableContainer>
-              <Table aria-busy={users.isFetching || undefined}>
-                <TableHead>
-                  <TableRow>
-                    <TableHeaderCell>User</TableHeaderCell>
-                    <TableHeaderCell>Role</TableHeaderCell>
-                    <TableHeaderCell>Status</TableHeaderCell>
-                    <TableHeaderCell>Created</TableHeaderCell>
-                    <TableHeaderCell align="end">
-                      <span className="visually-hidden">Actions</span>
-                    </TableHeaderCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {users.data.data.map((user) => {
-                    const isSelf = user.id === currentUser?.id;
-                    const nextStatus: UserStatus = user.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE';
-                    return (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          <div className={styles.user}>
-                            <Avatar name={user.name} size="sm" decorative />
-                            <div className={styles.userText}>
-                              <span className={styles.name}>
-                                {user.name}
-                                {isSelf && <span className={styles.you}> (you)</span>}
-                              </span>
-                              <span className={styles.email}>{user.email}</span>
-                            </div>
+            <Table aria-busy={users.isFetching || undefined}>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="pl-4">User</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="hidden md:table-cell">Created</TableHead>
+                  <TableHead className="pr-4 text-right">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.data.data.map((user) => {
+                  const isSelf = user.id === currentUser?.id;
+                  const nextStatus: UserStatus = user.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE';
+                  const statusReason = isSelf
+                    ? "You can't disable your own account"
+                    : 'Requires the USERS_UPDATE permission';
+                  const deleteReason = isSelf
+                    ? "You can't delete your own account"
+                    : 'Requires the USERS_DELETE permission';
+                  return (
+                    <TableRow key={user.id}>
+                      <TableCell className="pl-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="size-8">
+                            <AvatarFallback className="text-xs">
+                              {getInitials(user.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex min-w-0 flex-col">
+                            <span className="truncate font-medium">
+                              {user.name}
+                              {isSelf && (
+                                <span className="font-normal text-muted-foreground"> (you)</span>
+                              )}
+                            </span>
+                            <span className="truncate text-xs text-muted-foreground">
+                              {user.email}
+                            </span>
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge tone={roleTone[user.role]}>{roleLabel(user.role)}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="dot"
-                            tone={user.status === 'ACTIVE' ? 'success' : 'neutral'}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <ToneBadge tone={roleTone[user.role]}>{roleLabel(user.role)}</ToneBadge>
+                      </TableCell>
+                      <TableCell>
+                        <ToneBadge dot tone={user.status === 'ACTIVE' ? 'success' : 'neutral'}>
+                          {statusLabel[user.status]}
+                        </ToneBadge>
+                      </TableCell>
+                      <TableCell className="hidden text-muted-foreground md:table-cell">
+                        <time dateTime={user.createdAt}>{formatDate(user.createdAt)}</time>
+                      </TableCell>
+                      <TableCell className="pr-4 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label={`Actions for ${user.name}`}
+                              />
+                            }
                           >
-                            {statusLabel[user.status]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell muted>
-                          <time dateTime={user.createdAt}>{formatDate(user.createdAt)}</time>
-                        </TableCell>
-                        <TableCell align="end">
-                          <Dropdown
-                            label={`Actions for ${user.name}`}
-                            trigger={<IconMore />}
-                            items={[
-                              {
-                                id: 'edit',
-                                label: 'Edit',
-                                icon: <IconPencil />,
-                                disabled: !canUpdate,
-                                disabledReason: 'Requires the USERS_UPDATE permission',
-                                onSelect: () => setAction({ type: 'edit', user }),
-                              },
-                              {
-                                id: 'status',
-                                label: nextStatus === 'DISABLED' ? 'Disable' : 'Enable',
-                                icon: nextStatus === 'DISABLED' ? <IconBan /> : <IconCheckCircle />,
-                                disabled: !canUpdate || isSelf,
-                                disabledReason: isSelf
-                                  ? "You can't disable your own account"
-                                  : 'Requires the USERS_UPDATE permission',
-                                onSelect: () =>
-                                  setAction({ type: 'status', user, status: nextStatus }),
-                              },
-                              { id: 'separator', separator: true },
-                              {
-                                id: 'delete',
-                                label: 'Delete',
-                                icon: <IconTrash />,
-                                tone: 'danger',
-                                disabled: !canDelete || isSelf,
-                                disabledReason: isSelf
-                                  ? "You can't delete your own account"
-                                  : 'Requires the USERS_DELETE permission',
-                                onSelect: () => setAction({ type: 'delete', user }),
-                              },
-                            ]}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                            <MoreHorizontalIcon />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem
+                              disabled={!canUpdate}
+                              title={canUpdate ? undefined : 'Requires the USERS_UPDATE permission'}
+                              onClick={() => setAction({ type: 'edit', user })}
+                            >
+                              <PencilIcon /> Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              disabled={!canUpdate || isSelf}
+                              title={!canUpdate || isSelf ? statusReason : undefined}
+                              onClick={() =>
+                                setAction({ type: 'status', user, status: nextStatus })
+                              }
+                            >
+                              {nextStatus === 'DISABLED' ? <BanIcon /> : <CircleCheckIcon />}
+                              {nextStatus === 'DISABLED' ? 'Disable' : 'Enable'}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              variant="destructive"
+                              disabled={!canDelete || isSelf}
+                              title={!canDelete || isSelf ? deleteReason : undefined}
+                              onClick={() => setAction({ type: 'delete', user })}
+                            >
+                              <Trash2Icon /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
             {users.data.meta.totalPages > 1 && (
               <Pagination
                 meta={users.data.meta}
@@ -327,6 +346,6 @@ export function UsersPage() {
           action?.type === 'delete' ? deleteUser.mutateAsync(action.user.id) : undefined
         }
       />
-    </PageContainer>
+    </Page>
   );
 }

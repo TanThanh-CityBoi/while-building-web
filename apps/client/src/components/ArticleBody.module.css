@@ -1,0 +1,60 @@
+/* BlockNote's read-only view, themed with the site's tokens and set for long-form reading.
+   The double selector outranks BlockNote's own colour-scheme presets. */
+
+.body:global(.bn-container),
+.body:global(.bn-container)[data-color-scheme] {
+  --bn-font-family: var(--font-sans);
+  --bn-colors-editor-text: var(--color-text);
+  --bn-colors-editor-background: transparent;
+  --bn-colors-side-menu: var(--color-text-muted);
+  --bn-colors-highlights-gray-background: var(--color-surface-muted);
+  --bn-border-radius: var(--radius-md);
+}
+
+.body :global(.bn-editor) {
+  font-size: var(--text-lg);
+  line-height: var(--leading-body);
+}
+
+.body :global(.bn-block-outer) {
+  line-height: inherit;
+}
+
+/* Breathing room between blocks; list items stay together. */
+.body :global(.bn-block-content) {
+  padding-block: 0.35em;
+}
+
+.body :global([data-content-type='heading']) {
+  margin-top: 0.8em;
+  letter-spacing: -0.02em;
+}
+
+.body :global(.bn-inline-content a) {
+  color: var(--color-accent);
+  text-underline-offset: 0.2em;
+}
+
+.body :global(code) {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+.body :global([data-content-type='codeBlock']) {
+  margin-block: 0.5em;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+
+.body :global(.bn-block-content[data-content-type='bulletListItem'])::before,
+.body :global(.bn-block-content[data-content-type='numberedListItem'])::before {
+  color: var(--color-text-muted);
+}
+
+.body :global([data-content-type='quote']) {
+  color: var(--color-text-muted);
+}
+
+.body :global(img) {
+  border-radius: var(--radius-md);
+}

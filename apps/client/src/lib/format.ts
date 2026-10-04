@@ -1,3 +1,3 @@
 export function formatReadingTime(minutes: number): string {
-  return `${minutes} min read`;
+  return `${Math.max(minutes, 1)} min read`;
 }

@@ -1,4 +1,4 @@
-import type { Article } from '@while-building/types';
+import type { ArticleSummary } from '@while-building/types';
 import { Tag } from '@while-building/ui';
 import { formatDate } from '@while-building/utils';
 import { Link } from 'react-router';
@@ -8,7 +8,7 @@ import styles from './ArticleCard.module.css';
 type HeadingLevel = 'h2' | 'h3';
 
 interface ArticleCardProps {
-  article: Article;
+  article: ArticleSummary;
   /** Use `h2` when the list sits directly under the page's `h1`. */
   headingLevel?: HeadingLevel;
 }
@@ -27,18 +27,29 @@ export function ArticleCard({ article, headingLevel: Heading = 'h3' }: ArticleCa
             {article.title}
           </Link>
         </Heading>
-        <p className={styles.description}>{article.description}</p>
+        {article.excerpt && <p className={styles.description}>{article.excerpt}</p>}
         <div className={styles.meta}>
-          <Tag tone="accent">{article.category}</Tag>
-          <span>{formatReadingTime(article.readingTimeMinutes)}</span>
+          {article.category && <Tag tone="accent">{article.category}</Tag>}
+          {article.readingTimeMinutes > 0 && (
+            <span>{formatReadingTime(article.readingTimeMinutes)}</span>
+          )}
         </div>
       </div>
+      {article.coverImage && (
+        <img
+          src={article.coverImage}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className={styles.cover}
+        />
+      )}
     </article>
   );
 }
 
 interface ArticleListProps {
-  articles: Article[];
+  articles: ArticleSummary[];
   headingLevel?: HeadingLevel;
 }
 

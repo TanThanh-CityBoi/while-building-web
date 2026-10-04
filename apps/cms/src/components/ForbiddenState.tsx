@@ -1,32 +1,36 @@
 import type { Permission } from '@while-building/types';
-import { EmptyState, buttonClassName } from '@while-building/ui';
+import { buttonVariants } from '@while-building/ui/components/button';
+import { LockIcon } from 'lucide-react';
 import { Link } from 'react-router';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
-import { IconLock } from './icons';
+import { Page } from './Page';
+import { EmptyState } from './States';
 
 /** Shown in place of a page the user isn't allowed to see (UX only — the API enforces access). */
 export function ForbiddenState({ permission }: { permission?: Permission }) {
   useDocumentTitle('No access');
 
   return (
-    <EmptyState
-      icon={<IconLock />}
-      title="You don't have access to this page"
-      description={
-        permission ? (
-          <>
-            It requires the <code>{permission}</code> permission. Ask an administrator if you need
-            it.
-          </>
-        ) : (
-          'Ask an administrator if you need access.'
-        )
-      }
-      action={
-        <Link to="/dashboard" className={buttonClassName({ variant: 'secondary', size: 'sm' })}>
-          Go to dashboard
-        </Link>
-      }
-    />
+    <Page>
+      <EmptyState
+        icon={<LockIcon />}
+        title="You don't have access to this page"
+        description={
+          permission ? (
+            <>
+              It requires the <code className="font-mono">{permission}</code> permission. Ask an
+              administrator if you need it.
+            </>
+          ) : (
+            'Ask an administrator if you need access.'
+          )
+        }
+        action={
+          <Link to="/dashboard" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+            Go to dashboard
+          </Link>
+        }
+      />
+    </Page>
   );
 }

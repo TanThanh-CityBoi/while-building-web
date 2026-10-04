@@ -1,5 +1,5 @@
-import type { ContentStatus } from '@while-building/types';
-import type { BadgeTone } from '@while-building/ui';
+import type { ArticleStatus, ContentStatus } from '@while-building/types';
+import type { Tone } from '@/components/ToneBadge';
 
 export const contentStatusLabel: Record<ContentStatus, string> = {
   DRAFT: 'Draft',
@@ -7,15 +7,26 @@ export const contentStatusLabel: Record<ContentStatus, string> = {
   ARCHIVED: 'Archived',
 };
 
-export const contentStatusTone: Record<ContentStatus, BadgeTone> = {
+export const contentStatusTone: Record<ContentStatus, Tone> = {
   DRAFT: 'warning',
   PUBLISHED: 'success',
   ARCHIVED: 'neutral',
 };
 
-export const contentStatusOptions = [
+export interface StatusOption<S extends string> {
+  value: S | '';
+  label: string;
+}
+
+export const projectStatusOptions: StatusOption<ContentStatus>[] = [
   { value: '', label: 'All statuses' },
   { value: 'DRAFT', label: 'Draft' },
   { value: 'PUBLISHED', label: 'Published' },
   { value: 'ARCHIVED', label: 'Archived' },
-] as const;
+];
+
+export const articleStatusOptions: StatusOption<ArticleStatus>[] = [
+  { value: '', label: 'All statuses' },
+  { value: 'DRAFT', label: 'Draft' },
+  { value: 'PUBLISHED', label: 'Published' },
+];
