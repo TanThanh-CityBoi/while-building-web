@@ -73,11 +73,17 @@ app, so its routes have no `/cms` prefix.
 | `/content`          | Content overview                | `CONTENT_READ` |
 | `/content/articles` | Articles table                  | `CONTENT_READ` |
 | `/content/projects` | Projects table                  | `CONTENT_READ` |
+| `/assistant`        | Ask While Building (AI chat)    | `CONTENT_READ` |
 | `/users`            | User management                 | `USERS_READ`   |
 | `/settings`         | Profile, session, permissions   | —              |
 
 - Every route except `/login` requires a session; the session is restored on startup before any
   protected UI renders.
+- `/assistant` chats with the While Building assistant (`apps/ai` in while-building-api): answers
+  about published articles and projects stream in, with the lookups it runs and the sources it used.
+  The user picks the LLM provider and one of its models from what the server offers (`GET /models`);
+  the server validates the choice. The conversation stays in memory (gone on reload or sign-out);
+  Stop cancels the answer on the server.
 - Users: list (search, role/status filters, pagination), create, edit (name, email, role, password
   reset), enable/disable, delete — all against the users API.
 - Content pages are the CMS foundation: tables, filters, statuses, empty states and permission-aware
@@ -90,7 +96,7 @@ app, so its routes have no `/cms` prefix.
 | `@while-building/ui`         | Button, Input, Textarea, Select, FormField, Card, Dialog, Dropdown, Table primitives, Badge, Avatar, Tag, Alert, Empty/Loading/Error states, PageContainer, PageHeader, design tokens. No routing, auth or business logic. See [packages/ui](packages/ui/README.md). |
 | `@while-building/types`      | API contract types: `User`, `Role`, `Permission`, `UserStatus`, `AuthUser`, `Article`, `Project`, `ApiResponse`, `Pagination`… No passwords or tokens.                                                                                                               |
 | `@while-building/utils`      | Date formatting, initials/pluralization, URL/query helpers, email/password checks, brand constants, `cx`.                                                                                                                                                            |
-| `@while-building/api-client` | The single HTTP layer for both apps: base URL, errors, in-memory access token, refresh-on-401, auth/users/health endpoints. See [packages/api-client](packages/api-client/README.md).                                                                                |
+| `@while-building/api-client` | The single HTTP layer for both apps: base URL, errors, in-memory access token, refresh-on-401, auth/users/health endpoints, and the assistant's streaming chat (`api.ai`). See [packages/api-client](packages/api-client/README.md).                                 |
 | `@while-building/config`     | Shared `tsconfig` bases and ESLint flat-config presets. Prettier is configured once at the root.                                                                                                                                                                     |
 
 ## Technology
@@ -142,7 +148,7 @@ pnpm typecheck
 ## Test
 
 ```bash
-pnpm test           # Vitest: utils, api-client, CMS auth/permissions
+pnpm test           # Vitest: utils, api-client, CMS auth/permissions and assistant
 pnpm check          # typecheck + lint + test + build in one Turborepo run (CI)
 ```
 
@@ -150,10 +156,11 @@ pnpm check          # typecheck + lint + test + build in one Turborepo run (CI)
 
 Each app has its own `.env` (git-ignored) created from its `.env.example`.
 
-| App           | Variable       | Example                 | Notes                                                                     |
-| ------------- | -------------- | ----------------------- | ------------------------------------------------------------------------- |
-| `apps/client` | `VITE_API_URL` | `http://localhost:3000` | Optional. Without it the footer shows "API not configured".               |
-| `apps/cms`    | `VITE_API_URL` | `http://localhost:3000` | Required for sign-in. The API must allow the CMS origin with credentials. |
+| App           | Variable       | Example                 | Notes                                                                         |
+| ------------- | -------------- | ----------------------- | ----------------------------------------------------------------------------- |
+| `apps/client` | `VITE_API_URL` | `http://localhost:3000` | Optional. Without it the footer shows "API not configured".                   |
+| `apps/cms`    | `VITE_API_URL` | `http://localhost:3000` | Required for sign-in. The API must allow the CMS origin with credentials.     |
+| `apps/cms`    | `VITE_AI_URL`  | `http://localhost:3004` | Optional: the assistant (`/assistant`). The AI app must allow the CMS origin. |
 
 `VITE_*` variables are embedded in the bundle at build time — never put secrets in them. Set
 production values in the hosting provider's build settings.
@@ -205,6 +212,9 @@ What the API needs for the CMS to work:
 3. The refresh cookie: `HttpOnly`, `Secure` in production, `SameSite=Lax` (API and CMS on the same
    site, e.g. `cms.example.com` + `api.example.com`) or `SameSite=None; Secure` if they're on
    different sites.
+4. For the assistant: the AI app (`apps/ai`) running at `VITE_AI_URL`, with the CMS origin in its
+   own `CORS_ORIGIN` (no credentials: it receives the access token as a bearer header). The LLM key
+   lives only in that app's environment.
 
 ## Deployment
 

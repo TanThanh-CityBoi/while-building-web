@@ -27,6 +27,7 @@ describe('filterByPermission (sidebar navigation)', () => {
       'Content',
       'Articles',
       'Projects',
+      'Assistant',
       'Users',
       'Settings',
     ]);
@@ -38,6 +39,7 @@ describe('filterByPermission (sidebar navigation)', () => {
       'Content',
       'Articles',
       'Projects',
+      'Assistant',
       'Settings',
     ]);
   });
