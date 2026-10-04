@@ -12,3 +12,27 @@ export function getInitials(name: string): string {
 export function pluralize(count: number, singular: string, plural = `${singular}s`): string {
   return `${count} ${count === 1 ? singular : plural}`;
 }
+
+/** Lower-case words separated by single hyphens, e.g. `my-first-k3s-cluster` (the API's rule). */
+export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+export const SLUG_MAX_LENGTH = 200;
+
+export function isValidSlug(value: string): boolean {
+  return value.length <= SLUG_MAX_LENGTH && SLUG_PATTERN.test(value);
+}
+
+/**
+ * A URL slug from a title, as the API derives it: accents dropped (Vietnamese included),
+ * anything else that isn't a letter or digit becomes a hyphen.
+ * `Chạy PostgreSQL trên Homelab` → `chay-postgresql-tren-homelab`.
+ */
+export function slugify(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replace(/[đĐ]/g, 'd')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .slice(0, SLUG_MAX_LENGTH)
+    .replace(/^-+|-+$/g, '');
+}
