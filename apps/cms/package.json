@@ -13,16 +13,22 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@blocknote/core": "~0.55.0",
+    "@blocknote/react": "~0.55.0",
+    "@blocknote/shadcn": "~0.55.0",
     "@tanstack/react-query": "^5.103.2",
     "@while-building/api-client": "workspace:*",
     "@while-building/types": "workspace:*",
     "@while-building/ui": "workspace:*",
     "@while-building/utils": "workspace:*",
+    "lucide-react": "^1.50.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "react-router": "^8.4.0"
+    "react-router": "^8.4.0",
+    "sonner": "^2.0.8"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
@@ -33,6 +39,7 @@
     "@while-building/config": "workspace:*",
     "eslint": "^10.11.0",
     "jsdom": "^30.1.1",
+    "tailwindcss": "^4.3.3",
     "typescript": "~6.0.3",
     "vite": "^8.3.1",
     "vitest": "^5.0.2"

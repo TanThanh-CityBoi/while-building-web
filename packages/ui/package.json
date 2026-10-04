@@ -2,21 +2,36 @@
   "name": "@while-building/ui",
   "version": "0.0.0",
   "private": true,
-  "description": "Application-agnostic React UI primitives for While Building apps.",
+  "description": "React UI for While Building apps: shadcn/ui components (CMS), the original CSS Modules kit (public site) and the rich-text viewer.",
   "type": "module",
   "sideEffects": [
     "**/*.css"
   ],
   "exports": {
     ".": "./src/index.ts",
-    "./styles.css": "./src/styles/index.css"
+    "./styles.css": "./src/styles/index.css",
+    "./globals.css": "./src/styles/globals.css",
+    "./components/*": "./src/components/*.tsx",
+    "./lib/*": "./src/lib/*.ts",
+    "./hooks/*": "./src/hooks/*.ts",
+    "./rich-text": "./src/rich-text/index.ts",
+    "./rich-text.css": "./src/rich-text/rich-text.css"
   },
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@while-building/utils": "workspace:*"
+    "@base-ui/react": "^1.8.0",
+    "@blocknote/core": "~0.55.0",
+    "@blocknote/react": "~0.55.0",
+    "@while-building/utils": "workspace:*",
+    "class-variance-authority": "^0.7.1",
+    "cn": "^0.4.0",
+    "lucide-react": "^1.50.0",
+    "shadcn": "^4.21.1",
+    "sonner": "^2.0.8",
+    "tw-animate-css": "^1.4.0"
   },
   "peerDependencies": {
     "react": "^19.2.0"
@@ -26,6 +41,7 @@
     "@while-building/config": "workspace:*",
     "eslint": "^10.11.0",
     "react": "^19.3.0",
+    "tailwindcss": "^4.3.3",
     "typescript": "~6.0.3"
   }
 }

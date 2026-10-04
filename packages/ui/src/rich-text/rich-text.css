@@ -1,0 +1,31 @@
+/* ---------------------------------------------------------------------------
+   Base styles for BlockNote documents (editor and RichTextViewer). Apps map
+   the colours to their own theme through the --bn-* variables.
+   ------------------------------------------------------------------------ */
+
+@import '@blocknote/react/style.css';
+
+.wb-rich-text {
+  --bn-font-family: inherit;
+  --bn-border-radius: 6px;
+}
+
+.wb-rich-text .bn-editor {
+  background: transparent;
+  color: inherit;
+}
+
+/* Read-only: text aligns with the surrounding page. */
+.wb-rich-text--viewer .bn-editor {
+  padding-inline: 0;
+}
+
+/* Read-only: no "Heading" / "Type '/' for commands" placeholders on empty blocks. */
+.wb-rich-text--viewer .bn-block-content:has(.ProseMirror-trailingBreak:only-child)::after {
+  content: none !important;
+}
+
+/* Editing: room on the left for the block handle (+ and drag). */
+.wb-rich-text--editor .bn-editor {
+  padding-inline: 3rem 0;
+}
